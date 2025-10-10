@@ -49,6 +49,7 @@
                 display: flex;
                 justify-content: center;
                 align-items: center;
+                position: relative; /* enable z-index to work */
                 z-index: 30;
                 transition: background-color 0.1s ease-in-out;
                 font-variant-numeric: tabular-nums;
@@ -485,12 +486,18 @@
                     pathElement.setAttribute("d", "");
                     return;
                 }
+                // Use precise positions from getBoundingClientRect to avoid
+                // fractional-pixel rounding mismatch with CSS centering.
+                const svgRect = svgPathEl.getBoundingClientRect();
                 const pathData = playerPath
                     .map((pos, index) => {
                         const command = index === 0 ? "M" : "L";
                         const cell = grid[pos.row][pos.col];
-                        const x = cell.offsetLeft + cell.offsetWidth / 2;
-                        const y = cell.offsetTop + cell.offsetHeight / 2;
+                        const cellRect = cell.getBoundingClientRect();
+                        const x =
+                            cellRect.left - svgRect.left + cellRect.width / 2;
+                        const y =
+                            cellRect.top - svgRect.top + cellRect.height / 2;
                         return `${command} ${x} ${y}`;
                     })
                     .join(" ");
