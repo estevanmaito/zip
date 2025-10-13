@@ -382,7 +382,34 @@
                 }
 
                 numberedCells.clear();
-                const numCount = Math.min(18, 7 + Math.floor(level / 3));
+
+                // Tier-based random difficulty system
+                const difficultyTiers = [
+                    { min: 7, max: 8, probability: 70 }, // 70%
+                    { min: 9, max: 12, probability: 15 }, // 15%
+                    { min: 13, max: 15, probability: 10 }, // 10%
+                    { min: 16, max: 18, probability: 5 }, // 5%
+                ];
+
+                function getRandomNumCount() {
+                    const rand = Math.random() * 100;
+                    let cumulative = 0;
+
+                    for (const tier of difficultyTiers) {
+                        cumulative += tier.probability;
+                        if (rand < cumulative) {
+                            return (
+                                Math.floor(
+                                    Math.random() * (tier.max - tier.min + 1)
+                                ) + tier.min
+                            );
+                        }
+                    }
+                    // Fallback (should not reach here)
+                    return 7;
+                }
+
+                const numCount = getRandomNumCount();
                 const pathIndices = new Set();
                 pathIndices.add(0);
                 pathIndices.add(path.length - 1);
