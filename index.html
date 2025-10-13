@@ -107,6 +107,57 @@
                     background: transparent;
                 }
             }
+            /* Demo grid styles */
+            .demo-grid-container {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: repeat(3, 1fr);
+                width: 150px;
+                height: 150px;
+                margin: 0 auto;
+                position: relative;
+            }
+            .demo-grid-cell {
+                width: 100%;
+                height: 100%;
+                border: 1px solid #e5e7eb;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                position: relative;
+            }
+            .demo-grid-cell.path-middle {
+                background-color: #fef6db;
+            }
+            .demo-grid-cell .number-circle {
+                width: 1.5rem;
+                height: 1.5rem;
+                font-size: 0.75rem;
+                font-weight: 900;
+                z-index: 30;
+                position: relative;
+                background-color: #1f2937; /* gray-800 - default */
+                color: white;
+                border-radius: 9999px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            .demo-grid-cell .number-circle.is-start,
+            .demo-grid-cell .number-circle.is-on-path {
+                background-color: #f6ae3b; /* blue-500 */
+            }
+            #demo-path-svg {
+                z-index: 20;
+            }
+            #demo-path-svg path {
+                stroke: #fac160;
+                stroke-width: 24;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+                fill: none;
+                opacity: 0.9;
+            }
         </style>
     </head>
     <body
@@ -194,6 +245,89 @@
                         >
                     </p>
                 </div>
+
+                <!-- Demo Grid Illustration -->
+                <div class="mb-6 flex justify-center">
+                    <div class="relative w-[150px] h-[150px]">
+                        <div
+                            class="demo-grid-container bg-gray-50 border-2 border-gray-500 rounded-lg overflow-hidden"
+                        >
+                            <!-- Row 0 -->
+                            <div
+                                class="demo-grid-cell path-middle"
+                                data-demo-row="0"
+                                data-demo-col="0"
+                            >
+                                <span class="number-circle is-start is-on-path"
+                                    >1</span
+                                >
+                            </div>
+                            <div
+                                class="demo-grid-cell path-middle"
+                                data-demo-row="0"
+                                data-demo-col="1"
+                            ></div>
+                            <div
+                                class="demo-grid-cell path-middle"
+                                data-demo-row="0"
+                                data-demo-col="2"
+                            >
+                                <span class="number-circle is-on-path">2</span>
+                            </div>
+                            <!-- Row 1 -->
+                            <div
+                                class="demo-grid-cell path-middle"
+                                data-demo-row="1"
+                                data-demo-col="0"
+                            ></div>
+                            <div
+                                class="demo-grid-cell path-middle"
+                                data-demo-row="1"
+                                data-demo-col="1"
+                            ></div>
+                            <div
+                                class="demo-grid-cell path-middle"
+                                data-demo-row="1"
+                                data-demo-col="2"
+                            ></div>
+                            <!-- Row 2 -->
+                            <div
+                                class="demo-grid-cell path-middle"
+                                data-demo-row="2"
+                                data-demo-col="0"
+                            >
+                                <span class="number-circle is-on-path">3</span>
+                            </div>
+                            <div
+                                class="demo-grid-cell path-middle"
+                                data-demo-row="2"
+                                data-demo-col="1"
+                            ></div>
+                            <div
+                                class="demo-grid-cell path-middle"
+                                data-demo-row="2"
+                                data-demo-col="2"
+                            >
+                                <span class="number-circle is-on-path">4</span>
+                            </div>
+                        </div>
+                        <svg
+                            id="demo-path-svg"
+                            class="absolute top-0 left-0 w-full h-full pointer-events-none"
+                        >
+                            <path
+                                d="M 25 25 L 75 25 L 125 25 L 125 75 L 75 75 L 25 75 L 25 125 L 75 125 L 125 125"
+                            />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="mb-4 text-center">
+                    <p class="text-gray-500">
+                        Connect all dots in order and fill the entire grid.
+                    </p>
+                </div>
+
                 <button
                     id="play-btn"
                     class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:scale-105"
