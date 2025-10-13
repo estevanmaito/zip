@@ -160,7 +160,7 @@
 
             <div class="mt-4 text-center">
                 <p class="text-gray-500">
-                    Connect all numbers in order to fill the entire grid.
+                    Connect all dots in order and fill the entire grid.
                 </p>
             </div>
         </div>
@@ -648,7 +648,24 @@
                     }
                     playerStats.roundsPlayed++;
                     saveStats();
-                    completionModal.classList.remove("hidden");
+
+                    // Paint SVG path, number circles and grid container green to indicate success
+                    pathElement.style.stroke = "#4CAF50"; // green-400
+                    document
+                        .querySelectorAll(".number-circle")
+                        .forEach((circle) => {
+                            circle.style.backgroundColor = "#388E3C"; // green-500
+                        });
+                    document
+                        .querySelectorAll(".path-middle")
+                        .forEach((cell) => {
+                            cell.style.backgroundColor = "#C8E6C9"; // green-100
+                        });
+
+                    // Show completion modal after 1 second
+                    setTimeout(() => {
+                        completionModal.classList.remove("hidden");
+                    }, 1000);
                 }
             }
 
