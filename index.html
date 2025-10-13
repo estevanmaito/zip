@@ -671,6 +671,7 @@
 
             function clearPath() {
                 playerPath = [];
+                if (pathElement) pathElement.style.stroke = "#60a5fa"; // Reset to default blue
                 updatePathUI();
             }
 
