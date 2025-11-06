@@ -710,9 +710,11 @@
 
                 // 1. Determine what the button's state SHOULD be from the game data.
                 let desiredState;
+                const isUnlocked = (targetBiz && targetBiz.count >= upg.unlockCount) || 
+                                 (upg.target === 'all' && game.businesses.some(b => b.count > 0));
                 if (upg.purchased) {
                     desiredState = 'purchased';
-                } else if (targetBiz && targetBiz.count >= upg.unlockCount) {
+                } else if (isUnlocked) {
                     desiredState = 'unlocked';
                 } else {
                     desiredState = 'locked';
