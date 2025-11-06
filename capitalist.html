@@ -808,7 +808,8 @@
             const upg = game.upgrades[upgradeId];
             if (!upg || upg.purchased) return;
             const targetBiz = game.businesses.find(b => b.id === upg.target);
-            const isUnlocked = targetBiz && targetBiz.count >= upg.unlockCount;
+            const isUnlocked = (targetBiz && targetBiz.count >= upg.unlockCount) ||
+                             (upg.target === 'all' && game.businesses.some(b => b.count > 0));
             if (isUnlocked && game.cash >= upg.cost) {
                 game.cash -= upg.cost;
                 upg.purchased = true;
