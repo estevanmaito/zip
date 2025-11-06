@@ -279,6 +279,7 @@
 
         // Game state object
         let game;
+        let globalUiCache = {};
 
         // UI Element cache
         const ui = {
@@ -374,6 +375,10 @@
             } else {
                 game = defaultState;
             }
+
+            game.businesses.forEach(biz => {
+                biz.uiCache = {}; 
+            });
             
             calculateOfflineProgress();
             isGameLoaded = true;
@@ -535,6 +540,18 @@
         }
 
         // --- UI BUILDING & UPDATING ---
+        function updateElementText(elementId, newText, biz, cacheKey) {
+            // Check if the cached value is different from the new value.
+            if (biz.uiCache[cacheKey] !== newText) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.textContent = newText;
+                }
+                // Update the cache with the new value.
+                biz.uiCache[cacheKey] = newText;
+            }
+        }
+
         function buildBusinessesUI() {
             let html = '';
             for (const biz of game.businesses) {
@@ -543,7 +560,7 @@
                 html += `
                     <div id="biz-${biz.id}" class="bg-gray-800 rounded-lg p-3 shadow-lg">
                         <div class="flex flex-wrap gap-2 items-center">
-                            <div id="biz-click-${biz.id}" class="relative w-20 h-20 bg-gray-700 rounded-lg flex items-center justify-center text-3xl cursor-pointer ${showStartPulse ? 'pulse-startup' : ''}" onclick="manualClick('${biz.id}')">
+                            <div id="biz-click-${biz.id}" class="relative w-20 h-20 bg-gray-700 rounded-lg flex items-center justify-center text-3xl cursor-pointer select-none ${showStartPulse ? 'pulse-startup' : ''}" onclick="manualClick('${biz.id}')">
                                 ${getBizEmoji(biz.id)}
                                 ${showStartPulse ? '<span class="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold text-amber-400 whitespace-nowrap bg-gray-900 rounded-full px-2 py-0.5 shadow-lg">CLICK TO EARN $1!</span>' : ''}
                             </div>
@@ -590,7 +607,11 @@
                 ui.cashDisplay.textContent = `$${formatFullNumber(game.cash)}`;
                 lastCashUpdateTime = currentTime;
             }
-            ui.angelsDisplay.textContent = formatAbbreviatedNumber(game.angels); 
+            const angelsText = formatAbbreviatedNumber(game.angels);
+            if (globalUiCache.angels !== angelsText) {
+                ui.angelsDisplay.textContent = angelsText;
+                globalUiCache.angels = angelsText;
+            }
 
             for (const biz of game.businesses) {
                 const el_count = document.getElementById(`biz-count-${biz.id}`);
@@ -603,16 +624,27 @@
                 const amountToBuy = (game.buyAmount === 'MAX') ? getMaxBuyAmount(biz) : game.buyAmount;
                 const costToBuy = (amountToBuy > 0) ? getBuyCost(biz, amountToBuy) : getBuyCost(biz, 1);
 
-                el_count.textContent = formatAbbreviatedNumber(biz.count);
-                document.getElementById(`biz-cycle-rev-${biz.id}`).textContent = `$${formatAbbreviatedNumber(revenuePerCycle)}`;
-                document.getElementById(`biz-rev-${biz.id}`).textContent = `$${formatAbbreviatedNumber(revenuePerSecond)}/s`;
-                document.getElementById(`biz-time-${biz.id}`).textContent = `${effectiveTime.toFixed(2).replace('.', ',')}s`;
-                document.getElementById(`biz-buy-amt-${biz.id}`).textContent = (game.buyAmount === 'MAX' && amountToBuy > 0) ? formatAbbreviatedNumber(amountToBuy) : game.buyAmount;
-                document.getElementById(`biz-cost-${biz.id}`).textContent = `$${formatAbbreviatedNumber(costToBuy)}`;
+                const countText = formatAbbreviatedNumber(biz.count);
+                updateElementText(`biz-count-${biz.id}`, countText, biz, 'count');
 
-                const milestoneEl = document.getElementById(`biz-milestone-${biz.id}`);
-                const nextMilestone = getNextMilestone(biz.count);
-                milestoneEl.textContent = nextMilestone ? `(Next x2 at ${nextMilestone})` : '';
+                const cycleRevText = `$${formatAbbreviatedNumber(revenuePerCycle)}`;
+                updateElementText(`biz-cycle-rev-${biz.id}`, cycleRevText, biz, 'cycleRev');
+
+                const revPerSecText = `$${formatAbbreviatedNumber(revenuePerSecond)}/s`;
+                updateElementText(`biz-rev-${biz.id}`, revPerSecText, biz, 'rev');
+
+                const timeText = `${effectiveTime.toFixed(2).replace('.', ',')}s`;
+                updateElementText(`biz-time-${biz.id}`, timeText, biz, 'time');
+
+                const bizCostText = `$${formatAbbreviatedNumber(costToBuy)}`;
+                updateElementText(`biz-cost-${biz.id}`, bizCostText, biz, 'cost');
+
+                const nextMilestoneText = getNextMilestone(biz.count);
+                const milestoneText = nextMilestoneText ? `(Next x2 at ${nextMilestoneText})` : ''
+                updateElementText(`biz-milestone-${biz.id}`, milestoneText, biz, 'milestone');
+
+                const amountToBuyText = (game.buyAmount === 'MAX' && amountToBuy > 0) ? formatAbbreviatedNumber(amountToBuy) : game.buyAmount;
+                updateElementText(`biz-buy-amt-${biz.id}`, amountToBuyText, biz, 'buyAmt');
 
                 let progress;
                 if (effectiveTime < 1 && biz.count > 0 && biz.hasManager) {
@@ -632,8 +664,18 @@
             updateUpgradesPanel();
 
             const angelsToGain = getAngelsToGain();
-            ui.angelsToGainDisplay.textContent = formatAbbreviatedNumber(angelsToGain);
-            ui.angelBoostDisplay.textContent = `${(getAngelBonus() * 100 - 100).toFixed(0)}%`;
+            const angelsToGainText = formatAbbreviatedNumber(angelsToGain);
+            if (globalUiCache.angelsToGain !== angelsToGainText) {
+                ui.angelsToGainDisplay.textContent = angelsToGainText;
+                globalUiCache.angelsToGain = angelsToGainText;
+            }
+
+            const angelBoostText = `${(getAngelBonus() * 100 - 100).toFixed(0)}%`;
+            if (globalUiCache.angelBoost !== angelBoostText) {
+                ui.angelBoostDisplay.textContent = angelBoostText;
+                globalUiCache.angelBoost = angelBoostText;
+            }
+
             ui.prestigeButton.disabled = angelsToGain <= 0;
         }
 
