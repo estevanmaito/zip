@@ -48,8 +48,8 @@
         .upgrade-node {
             position: relative;
             z-index: 1;
-            width: 120px;
-            height: 100px;
+            width: 100px;
+            height: 80px;
             border-width: 2px;
             border-radius: 0.5rem;
             display: flex;
@@ -147,12 +147,12 @@
 
             <!-- Upgrades Panel -->
             <div id="panel-upgrades" class="tab-panel hidden">
-                <div class="bg-gray-800 rounded-lg p-4 space-y-4">
+                <div class="bg-gray-800 rounded-lg p-4 space-y-4 overflow-x-scroll">
                     <!-- [NEW] Static HTML Skill Tree -->
                     <!-- Lemonade -->
                     <div class="flex items-center">
                         <div class="text-4xl">🍋</div>
-                        <div class="upgrade-track">
+                        <div class="upgrade-track space-x-4">
                             <button id="upg-btn-lemonade-1" class="upgrade-node locked" onclick="buyUpgrade('lemonade-1')"><span class="effect">Profit x3</span><span class="cost">$1K</span><span class="req">Req: 25</span></button>
                             <button id="upg-btn-lemonade-2" class="upgrade-node locked" onclick="buyUpgrade('lemonade-2')"><span class="effect">Profit x3</span><span class="cost">$50K</span><span class="req">Req: 75</span></button>
                             <button id="upg-btn-lemonade-3" class="upgrade-node locked" onclick="buyUpgrade('lemonade-3')"><span class="effect">Speed x2</span><span class="cost">$200K</span><span class="req">Req: 150</span></button>
@@ -161,7 +161,7 @@
                     <!-- Newspaper -->
                     <div class="flex items-center">
                         <div class="text-4xl">📰</div>
-                        <div class="upgrade-track">
+                        <div class="upgrade-track space-x-4">
                             <button id="upg-btn-newspaper-1" class="upgrade-node locked" onclick="buyUpgrade('newspaper-1')"><span class="effect">Profit x3</span><span class="cost">$60K</span><span class="req">Req: 25</span></button>
                             <button id="upg-btn-newspaper-2" class="upgrade-node locked" onclick="buyUpgrade('newspaper-2')"><span class="effect">Profit x4</span><span class="cost">$5M</span><span class="req">Req: 75</span></button>
                             <button id="upg-btn-newspaper-3" class="upgrade-node locked" onclick="buyUpgrade('newspaper-3')"><span class="effect">Speed x2</span><span class="cost">$50M</span><span class="req">Req: 150</span></button>
@@ -170,7 +170,7 @@
                     <!-- Car Wash -->
                     <div class="flex items-center">
                         <div class="text-4xl">🚗</div>
-                        <div class="upgrade-track">
+                        <div class="upgrade-track space-x-4">
                             <button id="upg-btn-carwash-1" class="upgrade-node locked" onclick="buyUpgrade('carwash-1')"><span class="effect">Profit x3</span><span class="cost">$750K</span><span class="req">Req: 25</span></button>
                             <button id="upg-btn-carwash-2" class="upgrade-node locked" onclick="buyUpgrade('carwash-2')"><span class="effect">Profit x4</span><span class="cost">$80M</span><span class="req">Req: 75</span></button>
                             <button id="upg-btn-carwash-3" class="upgrade-node locked" onclick="buyUpgrade('carwash-3')"><span class="effect">Speed x2</span><span class="cost">$900M</span><span class="req">Req: 150</span></button>
@@ -179,7 +179,7 @@
                     <!-- Pizza -->
                     <div class="flex items-center">
                         <div class="text-4xl">🍕</div>
-                        <div class="upgrade-track">
+                        <div class="upgrade-track space-x-4">
                             <button id="upg-btn-pizza-1" class="upgrade-node locked" onclick="buyUpgrade('pizza-1')"><span class="effect">Profit x3</span><span class="cost">$10M</span><span class="req">Req: 25</span></button>
                             <button id="upg-btn-pizza-2" class="upgrade-node locked" onclick="buyUpgrade('pizza-2')"><span class="effect">Profit x4</span><span class="cost">$1.2B</span><span class="req">Req: 75</span></button>
                             <button id="upg-btn-pizza-3" class="upgrade-node locked" onclick="buyUpgrade('pizza-3')"><span class="effect">Speed x2</span><span class="cost">$10B</span><span class="req">Req: 150</span></button>
@@ -188,7 +188,7 @@
                     <!-- Donut -->
                     <div class="flex items-center">
                         <div class="text-4xl">🍩</div>
-                        <div class="upgrade-track">
+                        <div class="upgrade-track space-x-4">
                             <button id="upg-btn-donut-1" class="upgrade-node locked" onclick="buyUpgrade('donut-1')"><span class="effect">Profit x3</span><span class="cost">$120M</span><span class="req">Req: 25</span></button>
                             <button id="upg-btn-donut-2" class="upgrade-node locked" onclick="buyUpgrade('donut-2')"><span class="effect">Profit x4</span><span class="cost">$15B</span><span class="req">Req: 75</span></button>
                             <button id="upg-btn-donut-3" class="upgrade-node locked" onclick="buyUpgrade('donut-3')"><span class="effect">Speed x2</span><span class="cost">$180B</span><span class="req">Req: 150</span></button>
@@ -197,7 +197,7 @@
                     <!-- Shrimp -->
                     <div class="flex items-center">
                         <div class="text-4xl">🍤</div>
-                        <div class="upgrade-track">
+                        <div class="upgrade-track space-x-4">
                             <button id="upg-btn-shrimp-1" class="upgrade-node locked" onclick="buyUpgrade('shrimp-1')"><span class="effect">Profit x3</span><span class="cost">$1.5B</span><span class="req">Req: 25</span></button>
                             <button id="upg-btn-shrimp-2" class="upgrade-node locked" onclick="buyUpgrade('shrimp-2')"><span class="effect">Profit x4</span><span class="cost">$180B</span><span class="req">Req: 75</span></button>
                             <button id="upg-btn-shrimp-3" class="upgrade-node locked" onclick="buyUpgrade('shrimp-3')"><span class="effect">Speed x2</span><span class="cost">$2.1T</span><span class="req">Req: 150</span></button>
@@ -206,7 +206,7 @@
                     <!-- Hockey -->
                     <div class="flex items-center">
                         <div class="text-4xl">🏒</div>
-                        <div class="upgrade-track">
+                        <div class="upgrade-track space-x-4">
                             <button id="upg-btn-hockey-1" class="upgrade-node locked" onclick="buyUpgrade('hockey-1')"><span class="effect">Profit x3</span><span class="cost">$18B</span><span class="req">Req: 25</span></button>
                             <button id="upg-btn-hockey-2" class="upgrade-node locked" onclick="buyUpgrade('hockey-2')"><span class="effect">Profit x4</span><span class="cost">$2.2T</span><span class="req">Req: 75</span></button>
                             <button id="upg-btn-hockey-3" class="upgrade-node locked" onclick="buyUpgrade('hockey-3')"><span class="effect">Speed x2</span><span class="cost">$26T</span><span class="req">Req: 150</span></button>
@@ -215,7 +215,7 @@
                     <!-- Movie -->
                     <div class="flex items-center">
                         <div class="text-4xl">🎬</div>
-                        <div class="upgrade-track">
+                        <div class="upgrade-track space-x-4">
                             <button id="upg-btn-movie-1" class="upgrade-node locked" onclick="buyUpgrade('movie-1')"><span class="effect">Profit x3</span><span class="cost">$215B</span><span class="req">Req: 25</span></button>
                             <button id="upg-btn-movie-2" class="upgrade-node locked" onclick="buyUpgrade('movie-2')"><span class="effect">Profit x4</span><span class="cost">$26T</span><span class="req">Req: 75</span></button>
                             <button id="upg-btn-movie-3" class="upgrade-node locked" onclick="buyUpgrade('movie-3')"><span class="effect">Speed x2</span><span class="cost">$310T</span><span class="req">Req: 150</span></button>
@@ -224,7 +224,7 @@
                     <!-- Bank -->
                     <div class="flex items-center">
                         <div class="text-4xl">🏦</div>
-                        <div class="upgrade-track">
+                        <div class="upgrade-track space-x-4">
                             <button id="upg-btn-bank-1" class="upgrade-node locked" onclick="buyUpgrade('bank-1')"><span class="effect">Profit x3</span><span class="cost">$2.6T</span><span class="req">Req: 25</span></button>
                             <button id="upg-btn-bank-2" class="upgrade-node locked" onclick="buyUpgrade('bank-2')"><span class="effect">Profit x4</span><span class="cost">$315T</span><span class="req">Req: 75</span></button>
                             <button id="upg-btn-bank-3" class="upgrade-node locked" onclick="buyUpgrade('bank-3')"><span class="effect">Speed x2</span><span class="cost">$3.7Qa</span><span class="req">Req: 150</span></button>
@@ -233,7 +233,7 @@
                     <!-- Oil Rig -->
                     <div class="flex items-center">
                         <div class="text-4xl">🛢️</div>
-                        <div class="upgrade-track">
+                        <div class="upgrade-track space-x-4">
                             <button id="upg-btn-oil-1" class="upgrade-node locked" onclick="buyUpgrade('oil-1')"><span class="effect">Profit x3</span><span class="cost">$31T</span><span class="req">Req: 25</span></button>
                             <button id="upg-btn-oil-2" class="upgrade-node locked" onclick="buyUpgrade('oil-2')"><span class="effect">Profit x4</span><span class="cost">$3.8Qa</span><span class="req">Req: 75</span></button>
                             <button id="upg-btn-oil-3" class="upgrade-node locked" onclick="buyUpgrade('oil-3')"><span class="effect">Speed x2</span><span class="cost">$45Qa</span><span class="req">Req: 150</span></button>
