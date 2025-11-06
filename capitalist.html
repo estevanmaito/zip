@@ -12,39 +12,89 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <style>
         /* Base styles */
-        body {
-            font-family: 'Inter', sans-serif;
-            overscroll-behavior: none;
-        }
-        /* Progress bar animation */
-        .progress-bar-inner {
-            transition: width 0.1s linear;
-        }
-        /* Cash display uses a mono font for consistent width */
-        .cash-display {
-            font-weight: 900; 
-            font-family: monospace; /* Important for seeing subtle changes in large numbers */
-            min-height: 1.5em; 
-            white-space: nowrap; /* Prevent wrapping */
-        }
-        /* Active tab style */
-        .tab-btn.active {
-            border-bottom-width: 2px;
-            border-color: #f59e0b; /* amber-500 */
-            color: #f59e0b;
-        }
-        /* Disabled button style */
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        /* Pulse animation for startup */
+        body { font-family: 'Inter', sans-serif; overscroll-behavior: none; }
+        .progress-bar-inner { transition: width 0.1s linear; }
+        .cash-display { font-weight: 900; font-family: monospace; min-height: 1.5em; white-space: nowrap; }
+        .tab-btn.active { border-bottom-width: 2px; border-color: #f59e0b; color: #f59e0b; }
+        button:disabled { cursor: not-allowed; }
         @keyframes pulse-startup {
             0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
             50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
         }
-        .pulse-startup {
-            animation: pulse-startup 1.5s infinite;
+        .pulse-startup { animation: pulse-startup 1.5s infinite; }
+
+        /* --- [NEW] Skill Tree Styles --- */
+        .upgrade-track {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-grow: 1;
+            margin-left: 1rem;
+            padding: 0 1rem;
+        }
+        /* The connecting line */
+        .upgrade-track::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 1rem;
+            right: 1rem;
+            height: 2px;
+            background-color: #4b5563; /* gray-600 */
+            transform: translateY(-50%);
+            z-index: 0;
+        }
+        .upgrade-node {
+            position: relative;
+            z-index: 1;
+            width: 120px;
+            height: 100px;
+            border-width: 2px;
+            border-radius: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.75rem;
+            transition: all 0.2s ease-in-out;
+        }
+        /* State: Locked */
+        .upgrade-node.locked {
+            background-color: #374151; /* gray-700 */
+            border-color: #4b5563; /* gray-600 */
+            color: #9ca3af; /* gray-400 */
+            filter: grayscale(50%);
+        }
+        /* State: Unlocked (can't afford) */
+        .upgrade-node.unlocked {
+            background-color: #1f2937; /* gray-800 */
+            border-color: #f59e0b; /* amber-500 */
+            color: #d1d5db; /* gray-300 */
+        }
+        /* State: Unlocked (can afford) */
+        .upgrade-node.unlocked:not(:disabled) {
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+        .upgrade-node.unlocked:not(:disabled):hover {
+            transform: scale(1.05);
+            border-color: #fbbf24; /* amber-400 */
+        }
+        /* State: Purchased */
+        .upgrade-node.purchased {
+            background-color: #166534; /* green-800 */
+            border-color: #22c55e; /* green-500 */
+            color: #d1d5db; /* gray-300 */
+        }
+        .upgrade-node .effect { font-weight: 700; font-size: 0.875rem; color: white; }
+        .upgrade-node .cost { color: #86efac; /* green-300 */ }
+        .upgrade-node .req { font-size: 0.65rem; }
+        .upgrade-node.purchased .effect::before {
+            content: '✔ ';
+            color: #86efac; /* green-300 */
         }
     </style>
 </head>
@@ -80,10 +130,10 @@
 
         <!-- Buy Amount Toggle -->
         <div class="flex justify-center rounded-lg shadow-sm bg-gray-700 w-fit mx-auto mb-4" role="group">
-            <button type="button" class="buy-toggle-btn active bg-amber-500" onclick="setBuyAmount(1)">Buy 1</button>
-            <button type="button" class="buy-toggle-btn" onclick="setBuyAmount(10)">Buy 10</button>
-            <button type="button" class="buy-toggle-btn" onclick="setBuyAmount(100)">Buy 100</button>
-            <button type="button" class="buy-toggle-btn" onclick="setBuyAmount('MAX')">Buy MAX</button>
+            <button type="button" class="buy-toggle-btn active bg-amber-500" onclick="setBuyAmount(1, this)">Buy 1</button>
+            <button type="button" class="buy-toggle-btn" onclick="setBuyAmount(10, this)">Buy 10</button>
+            <button type="button" class="buy-toggle-btn" onclick="setBuyAmount(100, this)">Buy 100</button>
+            <button type="button" class="buy-toggle-btn" onclick="setBuyAmount('MAX', this)">Buy MAX</button>
         </div>
         <style>.buy-toggle-btn { padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 500; color: white; background-color: transparent; border: 1px solid transparent; } .buy-toggle-btn:first-child { border-top-left-radius: 0.5rem; border-bottom-left-radius: 0.5rem; } .buy-toggle-btn:last-child { border-top-right-radius: 0.5rem; border-bottom-right-radius: 0.5rem; } .buy-toggle-btn:hover { background-color: #4b5563; } .buy-toggle-btn.active { background-color: #f59e0b; font-weight: 700; }</style>
 
@@ -97,12 +147,98 @@
 
             <!-- Upgrades Panel -->
             <div id="panel-upgrades" class="tab-panel hidden">
-                <div class="bg-gray-800 rounded-lg p-4">
-                    <h2 class="text-xl font-bold mb-4">Available Upgrades</h2>
-                    <div id="upgrades-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        <!-- Upgrades will be injected here ONCE -->
+                <div class="bg-gray-800 rounded-lg p-4 space-y-4">
+                    <!-- [NEW] Static HTML Skill Tree -->
+                    <!-- Lemonade -->
+                    <div class="flex items-center">
+                        <div class="text-4xl">🍋</div>
+                        <div class="upgrade-track">
+                            <button id="upg-btn-lemonade-1" class="upgrade-node locked" onclick="buyUpgrade('lemonade-1')"><span class="effect">Profit x3</span><span class="cost">$1K</span><span class="req">Req: 25</span></button>
+                            <button id="upg-btn-lemonade-2" class="upgrade-node locked" onclick="buyUpgrade('lemonade-2')"><span class="effect">Profit x3</span><span class="cost">$50K</span><span class="req">Req: 75</span></button>
+                            <button id="upg-btn-lemonade-3" class="upgrade-node locked" onclick="buyUpgrade('lemonade-3')"><span class="effect">Speed x2</span><span class="cost">$200K</span><span class="req">Req: 150</span></button>
+                        </div>
                     </div>
-                    <p id="no-upgrades-msg" class="text-gray-400 mt-4">No new upgrades available. Buy your first business (Lemonade Stand) to see early upgrades!</p>
+                    <!-- Newspaper -->
+                    <div class="flex items-center">
+                        <div class="text-4xl">📰</div>
+                        <div class="upgrade-track">
+                            <button id="upg-btn-newspaper-1" class="upgrade-node locked" onclick="buyUpgrade('newspaper-1')"><span class="effect">Profit x3</span><span class="cost">$60K</span><span class="req">Req: 25</span></button>
+                            <button id="upg-btn-newspaper-2" class="upgrade-node locked" onclick="buyUpgrade('newspaper-2')"><span class="effect">Profit x4</span><span class="cost">$5M</span><span class="req">Req: 75</span></button>
+                            <button id="upg-btn-newspaper-3" class="upgrade-node locked" onclick="buyUpgrade('newspaper-3')"><span class="effect">Speed x2</span><span class="cost">$50M</span><span class="req">Req: 150</span></button>
+                        </div>
+                    </div>
+                    <!-- Car Wash -->
+                    <div class="flex items-center">
+                        <div class="text-4xl">🚗</div>
+                        <div class="upgrade-track">
+                            <button id="upg-btn-carwash-1" class="upgrade-node locked" onclick="buyUpgrade('carwash-1')"><span class="effect">Profit x3</span><span class="cost">$750K</span><span class="req">Req: 25</span></button>
+                            <button id="upg-btn-carwash-2" class="upgrade-node locked" onclick="buyUpgrade('carwash-2')"><span class="effect">Profit x4</span><span class="cost">$80M</span><span class="req">Req: 75</span></button>
+                            <button id="upg-btn-carwash-3" class="upgrade-node locked" onclick="buyUpgrade('carwash-3')"><span class="effect">Speed x2</span><span class="cost">$900M</span><span class="req">Req: 150</span></button>
+                        </div>
+                    </div>
+                    <!-- Pizza -->
+                    <div class="flex items-center">
+                        <div class="text-4xl">🍕</div>
+                        <div class="upgrade-track">
+                            <button id="upg-btn-pizza-1" class="upgrade-node locked" onclick="buyUpgrade('pizza-1')"><span class="effect">Profit x3</span><span class="cost">$10M</span><span class="req">Req: 25</span></button>
+                            <button id="upg-btn-pizza-2" class="upgrade-node locked" onclick="buyUpgrade('pizza-2')"><span class="effect">Profit x4</span><span class="cost">$1.2B</span><span class="req">Req: 75</span></button>
+                            <button id="upg-btn-pizza-3" class="upgrade-node locked" onclick="buyUpgrade('pizza-3')"><span class="effect">Speed x2</span><span class="cost">$10B</span><span class="req">Req: 150</span></button>
+                        </div>
+                    </div>
+                    <!-- Donut -->
+                    <div class="flex items-center">
+                        <div class="text-4xl">🍩</div>
+                        <div class="upgrade-track">
+                            <button id="upg-btn-donut-1" class="upgrade-node locked" onclick="buyUpgrade('donut-1')"><span class="effect">Profit x3</span><span class="cost">$120M</span><span class="req">Req: 25</span></button>
+                            <button id="upg-btn-donut-2" class="upgrade-node locked" onclick="buyUpgrade('donut-2')"><span class="effect">Profit x4</span><span class="cost">$15B</span><span class="req">Req: 75</span></button>
+                            <button id="upg-btn-donut-3" class="upgrade-node locked" onclick="buyUpgrade('donut-3')"><span class="effect">Speed x2</span><span class="cost">$180B</span><span class="req">Req: 150</span></button>
+                        </div>
+                    </div>
+                    <!-- Shrimp -->
+                    <div class="flex items-center">
+                        <div class="text-4xl">🍤</div>
+                        <div class="upgrade-track">
+                            <button id="upg-btn-shrimp-1" class="upgrade-node locked" onclick="buyUpgrade('shrimp-1')"><span class="effect">Profit x3</span><span class="cost">$1.5B</span><span class="req">Req: 25</span></button>
+                            <button id="upg-btn-shrimp-2" class="upgrade-node locked" onclick="buyUpgrade('shrimp-2')"><span class="effect">Profit x4</span><span class="cost">$180B</span><span class="req">Req: 75</span></button>
+                            <button id="upg-btn-shrimp-3" class="upgrade-node locked" onclick="buyUpgrade('shrimp-3')"><span class="effect">Speed x2</span><span class="cost">$2.1T</span><span class="req">Req: 150</span></button>
+                        </div>
+                    </div>
+                    <!-- Hockey -->
+                    <div class="flex items-center">
+                        <div class="text-4xl">🏒</div>
+                        <div class="upgrade-track">
+                            <button id="upg-btn-hockey-1" class="upgrade-node locked" onclick="buyUpgrade('hockey-1')"><span class="effect">Profit x3</span><span class="cost">$18B</span><span class="req">Req: 25</span></button>
+                            <button id="upg-btn-hockey-2" class="upgrade-node locked" onclick="buyUpgrade('hockey-2')"><span class="effect">Profit x4</span><span class="cost">$2.2T</span><span class="req">Req: 75</span></button>
+                            <button id="upg-btn-hockey-3" class="upgrade-node locked" onclick="buyUpgrade('hockey-3')"><span class="effect">Speed x2</span><span class="cost">$26T</span><span class="req">Req: 150</span></button>
+                        </div>
+                    </div>
+                    <!-- Movie -->
+                    <div class="flex items-center">
+                        <div class="text-4xl">🎬</div>
+                        <div class="upgrade-track">
+                            <button id="upg-btn-movie-1" class="upgrade-node locked" onclick="buyUpgrade('movie-1')"><span class="effect">Profit x3</span><span class="cost">$215B</span><span class="req">Req: 25</span></button>
+                            <button id="upg-btn-movie-2" class="upgrade-node locked" onclick="buyUpgrade('movie-2')"><span class="effect">Profit x4</span><span class="cost">$26T</span><span class="req">Req: 75</span></button>
+                            <button id="upg-btn-movie-3" class="upgrade-node locked" onclick="buyUpgrade('movie-3')"><span class="effect">Speed x2</span><span class="cost">$310T</span><span class="req">Req: 150</span></button>
+                        </div>
+                    </div>
+                    <!-- Bank -->
+                    <div class="flex items-center">
+                        <div class="text-4xl">🏦</div>
+                        <div class="upgrade-track">
+                            <button id="upg-btn-bank-1" class="upgrade-node locked" onclick="buyUpgrade('bank-1')"><span class="effect">Profit x3</span><span class="cost">$2.6T</span><span class="req">Req: 25</span></button>
+                            <button id="upg-btn-bank-2" class="upgrade-node locked" onclick="buyUpgrade('bank-2')"><span class="effect">Profit x4</span><span class="cost">$315T</span><span class="req">Req: 75</span></button>
+                            <button id="upg-btn-bank-3" class="upgrade-node locked" onclick="buyUpgrade('bank-3')"><span class="effect">Speed x2</span><span class="cost">$3.7Qa</span><span class="req">Req: 150</span></button>
+                        </div>
+                    </div>
+                    <!-- Oil Rig -->
+                    <div class="flex items-center">
+                        <div class="text-4xl">🛢️</div>
+                        <div class="upgrade-track">
+                            <button id="upg-btn-oil-1" class="upgrade-node locked" onclick="buyUpgrade('oil-1')"><span class="effect">Profit x3</span><span class="cost">$31T</span><span class="req">Req: 25</span></button>
+                            <button id="upg-btn-oil-2" class="upgrade-node locked" onclick="buyUpgrade('oil-2')"><span class="effect">Profit x4</span><span class="cost">$3.8Qa</span><span class="req">Req: 75</span></button>
+                            <button id="upg-btn-oil-3" class="upgrade-node locked" onclick="buyUpgrade('oil-3')"><span class="effect">Speed x2</span><span class="cost">$45Qa</span><span class="req">Req: 150</span></button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -135,7 +271,11 @@
         // --- GLOBAL CONFIG & STATE ---
         let isGameLoaded = false;
         let isSaving = false;
-        const SAVE_KEY = 'adventureCapitalistGame'; // Key for localStorage
+        const SAVE_KEY = 'adventureCapitalistGame';
+
+        // Throttling variables
+        let lastCashUpdateTime = 0;
+        let lastTimerUpdateTime = 0;
 
         // Game state object
         let game;
@@ -146,7 +286,6 @@
             angelsDisplay: document.getElementById('angels-display'),
             businessesPanel: document.getElementById('panel-businesses'),
             upgradesContainer: document.getElementById('upgrades-container'),
-            noUpgradesMsg: document.getElementById('no-upgrades-msg'),
             angelsToGainDisplay: document.getElementById('angels-to-gain-display'),
             angelBoostDisplay: document.getElementById('angel-boost-display'),
             prestigeButton: document.getElementById('prestige-button'),
@@ -157,10 +296,6 @@
         };
         
         // --- GAME DATA DEFINITIONS ---
-
-        /**
-         * Defines the initial state for a new game.
-         */
         function getDefaultGameState() {
             return {
                 cash: 0,
@@ -168,7 +303,6 @@
                 angels: 0,
                 lastUpdateTime: new Date().getTime(),
                 buyAmount: 1,
-                // Business data as per the user's requirements
                 businesses: [
                     { id: 'lemonade', name: 'Lemonade Stand', count: 0, baseCost: 4, costRate: 1.07, baseRevenue: 1, baseTime: 0.6, managerCost: 500, hasManager: false, automationProgress: 0 },
                     { id: 'newspaper', name: 'Newspaper Delivery', count: 0, baseCost: 60, costRate: 1.15, baseRevenue: 60, baseTime: 3, managerCost: 10000, hasManager: false, automationProgress: 0 },
@@ -181,76 +315,79 @@
                     { id: 'bank', name: 'Bank', count: 0, baseCost: 2149908480, costRate: 1.08, baseRevenue: 2149908480, baseTime: 6144, managerCost: 300000000000, hasManager: false, automationProgress: 0 },
                     { id: 'oil', name: 'Oil Rig', count: 0, baseCost: 25798901760, costRate: 1.07, baseRevenue: 25798901760, baseTime: 36864, managerCost: 3600000000000, hasManager: false, automationProgress: 0 }
                 ],
-                // Upgrade data
+                // [NEW] Expanded upgrade list
                 upgrades: {
-                    'lem-upg-1': { id: 'lem-upg-1', name: 'Better Lemons', desc: 'Lemonade profit x3', cost: 1000, target: 'lemonade', multiplier: 3, unlockCount: 10, purchased: false },
-                    'lem-upg-2': { id: 'lem-upg-2', name: 'Sugar Rush', desc: 'Lemonade profit x3', cost: 50000, target: 'lemonade', multiplier: 3, unlockCount: 25, purchased: false },
-                    'news-upg-1': { id: 'news-upg-1', name: 'Extra! Extra!', desc: 'Newspaper profit x3', cost: 60000, target: 'newspaper', multiplier: 3, unlockCount: 10, purchased: false },
-                    'all-upg-1': { id: 'all-upg-1', name: 'Capitalist Coaching', desc: 'ALL profits x2!', cost: 1e9, target: 'all', multiplier: 2, unlockCount: 1, purchased: false }, 
-                    'all-upg-2': { id: 'all-upg-2', name: 'Further Coaching', desc: 'ALL profits x2!', cost: 1e15, target: 'all', multiplier: 2, unlockCount: 1, purchased: false }
+                    'lemonade-1':  { id: 'lemonade-1',  target: 'lemonade',  effect: 'profit', multiplier: 3, cost: 1e3,       unlockCount: 25,  purchased: false },
+                    'lemonade-2':  { id: 'lemonade-2',  target: 'lemonade',  effect: 'profit', multiplier: 3, cost: 50e3,      unlockCount: 75,  purchased: false },
+                    'lemonade-3':  { id: 'lemonade-3',  target: 'lemonade',  effect: 'speed',  multiplier: 2, cost: 200e3,     unlockCount: 150, purchased: false },
+                    'newspaper-1': { id: 'newspaper-1', target: 'newspaper', effect: 'profit', multiplier: 3, cost: 60e3,      unlockCount: 25,  purchased: false },
+                    'newspaper-2': { id: 'newspaper-2', target: 'newspaper', effect: 'profit', multiplier: 4, cost: 5e6,       unlockCount: 75,  purchased: false },
+                    'newspaper-3': { id: 'newspaper-3', target: 'newspaper', effect: 'speed',  multiplier: 2, cost: 50e6,      unlockCount: 150, purchased: false },
+                    'carwash-1':   { id: 'carwash-1',   target: 'carwash',   effect: 'profit', multiplier: 3, cost: 750e3,     unlockCount: 25,  purchased: false },
+                    'carwash-2':   { id: 'carwash-2',   target: 'carwash',   effect: 'profit', multiplier: 4, cost: 80e6,      unlockCount: 75,  purchased: false },
+                    'carwash-3':   { id: 'carwash-3',   target: 'carwash',   effect: 'speed',  multiplier: 2, cost: 900e6,     unlockCount: 150, purchased: false },
+                    'pizza-1':     { id: 'pizza-1',     target: 'pizza',     effect: 'profit', multiplier: 3, cost: 10e6,      unlockCount: 25,  purchased: false },
+                    'pizza-2':     { id: 'pizza-2',     target: 'pizza',     effect: 'profit', multiplier: 4, cost: 1.2e9,     unlockCount: 75,  purchased: false },
+                    'pizza-3':     { id: 'pizza-3',     target: 'pizza',     effect: 'speed',  multiplier: 2, cost: 10e9,      unlockCount: 150, purchased: false },
+                    'donut-1':     { id: 'donut-1',     target: 'donut',     effect: 'profit', multiplier: 3, cost: 120e6,     unlockCount: 25,  purchased: false },
+                    'donut-2':     { id: 'donut-2',     target: 'donut',     effect: 'profit', multiplier: 4, cost: 15e9,      unlockCount: 75,  purchased: false },
+                    'donut-3':     { id: 'donut-3',     target: 'donut',     effect: 'speed',  multiplier: 2, cost: 180e9,     unlockCount: 150, purchased: false },
+                    'shrimp-1':    { id: 'shrimp-1',    target: 'shrimp',    effect: 'profit', multiplier: 3, cost: 1.5e9,     unlockCount: 25,  purchased: false },
+                    'shrimp-2':    { id: 'shrimp-2',    target: 'shrimp',    effect: 'profit', multiplier: 4, cost: 180e9,     unlockCount: 75,  purchased: false },
+                    'shrimp-3':    { id: 'shrimp-3',    target: 'shrimp',    effect: 'speed',  multiplier: 2, cost: 2.1e12,    unlockCount: 150, purchased: false },
+                    'hockey-1':    { id: 'hockey-1',    target: 'hockey',    effect: 'profit', multiplier: 3, cost: 18e9,      unlockCount: 25,  purchased: false },
+                    'hockey-2':    { id: 'hockey-2',    target: 'hockey',    effect: 'profit', multiplier: 4, cost: 2.2e12,    unlockCount: 75,  purchased: false },
+                    'hockey-3':    { id: 'hockey-3',    target: 'hockey',    effect: 'speed',  multiplier: 2, cost: 26e12,     unlockCount: 150, purchased: false },
+                    'movie-1':     { id: 'movie-1',     target: 'movie',     effect: 'profit', multiplier: 3, cost: 215e9,     unlockCount: 25,  purchased: false },
+                    'movie-2':     { id: 'movie-2',     target: 'movie',     effect: 'profit', multiplier: 4, cost: 26e12,     unlockCount: 75,  purchased: false },
+                    'movie-3':     { id: 'movie-3',     target: 'movie',     effect: 'speed',  multiplier: 2, cost: 310e12,    unlockCount: 150, purchased: false },
+                    'bank-1':      { id: 'bank-1',      target: 'bank',      effect: 'profit', multiplier: 3, cost: 2.6e12,    unlockCount: 25,  purchased: false },
+                    'bank-2':      { id: 'bank-2',      target: 'bank',      effect: 'profit', multiplier: 4, cost: 315e12,    unlockCount: 75,  purchased: false },
+                    'bank-3':      { id: 'bank-3',      target: 'bank',      effect: 'speed',  multiplier: 2, cost: 3.7e15,    unlockCount: 150, purchased: false },
+                    'oil-1':       { id: 'oil-1',       target: 'oil',       effect: 'profit', multiplier: 3, cost: 31e12,     unlockCount: 25,  purchased: false },
+                    'oil-2':       { id: 'oil-2',       target: 'oil',       effect: 'profit', multiplier: 4, cost: 3.8e15,    unlockCount: 75,  purchased: false },
+                    'oil-3':       { id: 'oil-3',       target: 'oil',       effect: 'speed',  multiplier: 2, cost: 45e15,     unlockCount: 150, purchased: false },
                 }
             };
         }
 
-        // --- DATA LOADING & SAVING (using localStorage) ---
-
-        /**
-         * Loads game state from localStorage or sets default.
-         */
+        // --- DATA LOADING & SAVING ---
         function loadGame() {
             const defaultState = getDefaultGameState();
             let data = null;
-            
             try {
                 const savedData = localStorage.getItem(SAVE_KEY);
-                if (savedData) {
-                    data = JSON.parse(savedData);
-                }
+                if (savedData) data = JSON.parse(savedData);
             } catch (error) {
                 console.error("Error loading from localStorage:", error);
                 data = null; 
             }
 
             if (data) {
-                // Merge to ensure new businesses/upgrades from default are included
                 game = { ...defaultState, ...data };
                 game.businesses = defaultState.businesses.map(defaultBiz => {
                     const savedBiz = data.businesses?.find(b => b.id === defaultBiz.id);
                     return savedBiz ? { ...defaultBiz, ...savedBiz } : defaultBiz;
                 });
-                // Ensure all default upgrades exist in game.upgrades, potentially overriding saved ones if structure changed
+                // Merge saved upgrades with default to ensure new ones are added
                 game.upgrades = { ...defaultState.upgrades, ...data.upgrades };
-                
             } else {
                 game = defaultState;
             }
             
-            // Re-calculate offline progress
             calculateOfflineProgress();
-
-            // Set game as loaded and start the loop
             isGameLoaded = true;
             ui.loadingOverlay.classList.add('hidden');
             
-            // Build initial UI structures ONCE
             buildBusinessesUI();
-            buildUpgradesUI(); // <-- THE NEW FUNCTION CALL
+            // No need to build upgrades UI here as it's static HTML
             
-            // Start game loop
             requestAnimationFrame(gameLoop);
-            
-            // Start auto-save timer
-            setInterval(saveGame, 5000); // Save every 5 seconds
+            setInterval(saveGame, 5000);
         }
 
-        /**
-         * Saves the current game state to localStorage.
-         */
         function saveGame() {
-            if (isSaving) {
-                return; // Don't save if already saving
-            }
-            
+            if (isSaving) return;
             isSaving = true;
             try {
                 game.lastUpdateTime = new Date().getTime();
@@ -262,10 +399,6 @@
         }
 
         // --- GAME LOOP & CORE LOGIC ---
-
-        /**
-         * Main game loop, runs every frame.
-         */
         function gameLoop() {
             if (!isGameLoaded) {
                 requestAnimationFrame(gameLoop);
@@ -273,58 +406,44 @@
             }
 
             const currentTime = new Date().getTime();
-            const deltaTime = (currentTime - game.lastUpdateTime) / 1000; // Time in seconds
+            const deltaTime = (currentTime - game.lastUpdateTime) / 1000;
 
-            // Process automation
             processAutomation(deltaTime);
-            
-            // Update UI
-            updateUI();
+            updateUI(currentTime);
+
+            if (currentTime - lastTimerUpdateTime > 1000) {
+                updateLongTimers();
+                lastTimerUpdateTime = currentTime;
+            }
 
             game.lastUpdateTime = currentTime;
             requestAnimationFrame(gameLoop);
         }
 
-        /**
-         * Calculates and applies progress made while the game was closed.
-         */
         function calculateOfflineProgress() {
             const currentTime = new Date().getTime();
-            const deltaTime = (currentTime - game.lastUpdateTime) / 1000; // Time in seconds
-            
-            if (deltaTime > 0) {
-                processAutomation(deltaTime, true); // Process as offline
-            }
+            const deltaTime = (currentTime - game.lastUpdateTime) / 1000;
+            if (deltaTime > 0) processAutomation(deltaTime, true);
         }
 
-        /**
-         * Processes all automated business income.
-         */
         function processAutomation(deltaTime, isOffline = false) {
             let totalRevenue = 0;
-
             for (const biz of game.businesses) {
                 if (biz.hasManager && biz.count > 0) {
                     const effectiveTime = biz.baseTime / getSpeedBonus(biz);
-                    
                     if (isOffline) {
                         const cycles = Math.floor(deltaTime / effectiveTime);
-                        if (cycles > 0) {
-                            const revenue = cycles * getRevenuePerCycle(biz);
-                            totalRevenue += revenue;
-                        }
+                        if (cycles > 0) totalRevenue += cycles * getRevenuePerCycle(biz);
                     } else {
                         biz.automationProgress += deltaTime;
                         if (biz.automationProgress >= effectiveTime) {
                             const cycles = Math.floor(biz.automationProgress / effectiveTime);
                             biz.automationProgress %= effectiveTime;
-                            const revenue = cycles * getRevenuePerCycle(biz);
-                            totalRevenue += revenue;
+                            totalRevenue += cycles * getRevenuePerCycle(biz);
                         }
                     }
                 }
             }
-
             if (totalRevenue > 0) {
                 game.cash += totalRevenue;
                 game.lifetimeCash += totalRevenue;
@@ -332,135 +451,95 @@
         }
 
         // --- CALCULATION FUNCTIONS ---
-
-        /**
-         * Gets the total angel bonus multiplier.
-         */
-        function getAngelBonus() {
-            return 1 + (game.angels * 0.02); // 2% per angel
-        }
-
-        /**
-         * Calculates the revenue for a single cycle of the total business count.
-         */
+        function getAngelBonus() { return 1 + (game.angels * 0.02); }
         function getRevenuePerCycle(biz) {
             if (biz.count === 0) return 0;
-            
             let base = biz.baseRevenue * biz.count;
-            
-            // Apply upgrade multipliers
             let upgradeMultiplier = 1;
             for (const upgradeId in game.upgrades) {
                 const upg = game.upgrades[upgradeId];
-                if (upg.purchased && (upg.target === biz.id || upg.target === 'all')) {
+                if (upg.purchased && upg.effect === 'profit' && (upg.target === biz.id || upg.target === 'all')) {
                     upgradeMultiplier *= upg.multiplier;
                 }
             }
-            
-            // Apply angel bonus
             return base * upgradeMultiplier * getAngelBonus();
         }
-
-        /**
-         * Calculates the revenue gained from a single manual click of one unit.
-         */
         function getClickRevenue(biz) {
-             if (biz.id === 'lemonade' && biz.count === 0) {
-                 return biz.baseRevenue; // $1 for the very first click
-             }
+             if (biz.id === 'lemonade' && biz.count === 0) return biz.baseRevenue;
              if (biz.count === 0) return 0;
-             // Manual click revenue is the revenue of a single unit.
              return getRevenuePerCycle(biz) / biz.count;
         }
-
-        /**
-         * Calculates the speed bonus multiplier for a business.
-         */
         function getSpeedBonus(biz) {
             const milestones = [25, 50, 100, 200, 300, 400];
-            let multiplier = 1;
+            let milestoneMultiplier = 1;
             for (const ms of milestones) {
-                if (biz.count >= ms) {
-                    multiplier *= 2;
+                if (biz.count >= ms) milestoneMultiplier *= 2;
+            }
+
+            let upgradeMultiplier = 1;
+            for (const upgradeId in game.upgrades) {
+                const upg = game.upgrades[upgradeId];
+                if (upg.purchased && upg.effect === 'speed' && upg.target === biz.id) {
+                    upgradeMultiplier *= upg.multiplier;
                 }
             }
-            return multiplier;
+            return milestoneMultiplier * upgradeMultiplier;
         }
-
-        /**
-         * Calculates the cost to buy a specific amount of a business.
-         */
+        function getNextMilestone(count) {
+            const milestones = [25, 50, 100, 200, 300, 400];
+            for (const ms of milestones) {
+                if (count < ms) return ms;
+            }
+            return null;
+        }
         function getBuyCost(biz, amount) {
-            const n = biz.count;
-            const r = biz.costRate;
-            const c = biz.baseCost;
-            // Cost = C * (r^n * (r^amount - 1)) / (r - 1)
+            const n = biz.count, r = biz.costRate, c = biz.baseCost;
             const cost = c * (Math.pow(r, n) * (Math.pow(r, amount) - 1)) / (r - 1);
             return isFinite(cost) ? cost : Infinity;
         }
-
-        /**
-         * Calculates the maximum amount of a business the player can buy.
-         */
         function getMaxBuyAmount(biz) {
-            const n = biz.count;
-            const r = biz.costRate;
-            const c = biz.baseCost;
-            const cash = game.cash;
-            
+            const n = biz.count, r = biz.costRate, c = biz.baseCost, cash = game.cash;
             const val = (cash * (r - 1)) / (c * Math.pow(r, n)) + 1;
             if (val <= 1) return 0;
-            
             const amount = Math.floor(Math.log(val) / Math.log(r));
             return Math.max(0, amount);
         }
-
-        /**
-         * Calculates the number of angels to be gained on reset.
-         */
         function getAngelsToGain() {
-            // Formula: 150 * sqrt(LifetimeCash / 1e15) - CurrentAngels
             const angels = Math.floor(150 * Math.sqrt(game.lifetimeCash / 1e15));
             return Math.max(0, angels - game.angels);
         }
 
-        /**
-         * Formats large numbers into readable strings (K, M, B, T, etc.)
-         */
+        // --- FORMATTING HELPERS ---
         function formatAbbreviatedNumber(num) {
             if (Math.abs(num) < 1000) return num.toFixed(2).replace('.', ',');
             const units = ["K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"];
             const e = Math.floor(Math.log(Math.abs(num)) / Math.log(1000));
-            if (e >= units.length) {
-                return num.toExponential(2).replace('+', '');
-            }
+            if (e >= units.length) return num.toExponential(2).replace('+', '');
             const abbreviated = (num / Math.pow(1000, e)).toFixed(2);
             return abbreviated.replace('.', ',') + units[e - 1];
         }
-        
-        /**
-         * Formats cash display as a full number with dot thousands and comma decimal.
-         */
         function formatFullNumber(num) {
             const integerPart = Math.floor(num).toLocaleString('de-DE'); 
             const fractionalPart = (num - Math.floor(num)).toFixed(2).substring(2);
             return `${integerPart},${fractionalPart}`;
         }
-
+        function formatTime(totalSeconds) {
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            let parts = [];
+            if (hours > 0) parts.push(`${hours}h`);
+            if (minutes > 0) parts.push(`${minutes}m`);
+            if (seconds >= 0) parts.push(`${seconds}s`);
+            return parts.join(' ');
+        }
 
         // --- UI BUILDING & UPDATING ---
-
-        /**
-         * Creates the HTML for all businesses and injects it ONCE.
-         */
         function buildBusinessesUI() {
             let html = '';
             for (const biz of game.businesses) {
                 const isLemonade = biz.id === 'lemonade';
                 const showStartPulse = isLemonade && biz.count === 0 && game.cash < biz.baseCost;
-                const initialClickRev = getClickRevenue(biz);
-                const clickRevText = biz.count > 0 ? `$${formatAbbreviatedNumber(initialClickRev)}` : (isLemonade ? '$1,00' : '$0,00');
-
                 html += `
                     <div id="biz-${biz.id}" class="bg-gray-800 rounded-lg p-3 shadow-lg">
                         <div class="flex flex-wrap gap-2 items-center">
@@ -471,14 +550,19 @@
                             <div class="flex-1 min-w-[150px]">
                                 <h3 class="text-lg font-bold text-white">${biz.name}</h3>
                                 <div class="text-sm"><span class="text-gray-400">Owned:</span> <span id="biz-count-${biz.id}" class="font-semibold text-white">0</span></div>
-                                <div class="text-sm"><span class="text-gray-400">Auto Rev/s:</span> <span id="biz-rev-${biz.id}" class="font-semibold text-green-300">$0,00</span></div>
-                                <div class="text-sm"><span class="text-gray-400">Click Rev:</span> <span id="biz-click-rev-${biz.id}" class="font-semibold text-yellow-300">${clickRevText}</span></div>
-                                <div class="text-sm"><span class="text-gray-400">Time:</span> <span id="biz-time-${biz.id}" class="font-semibold text-white">0,60s</span></div>
+                                <div class="text-sm"><span class="text-gray-400">Rev/Cycle:</span> <span id="biz-cycle-rev-${biz.id}" class="font-semibold text-green-400">$0,00</span></div>
+                                <div class="text-sm"><span class="text-gray-400">Auto Rev/s:</span> <span id="biz-rev-${biz.id}" class="font-semibold text-green-300">$0,00/s</span></div>
+                                <div class="text-sm">
+                                    <span class="text-gray-400">Time:</span> 
+                                    <span id="biz-time-${biz.id}" class="font-semibold text-white">0,00s</span> 
+                                    <span id="biz-countdown-${biz.id}" class="text-xs text-gray-400"></span>
+                                    <span id="biz-milestone-${biz.id}" class="text-xs text-amber-400 ml-1"></span>
+                                </div>
                             </div>
                             <div class="w-full md:w-auto">
-                                <button id="biz-buy-${biz.id}" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg" onclick="buyBusiness('${biz.id}')">
+                                <button id="biz-buy-${biz.id}" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50" onclick="buyBusiness('${biz.id}')">
                                     <div>Buy <span id="biz-buy-amt-${biz.id}">1</span></div>
-                                    <div id="biz-cost-${biz.id}" class="text-sm">$4,00</div>
+                                    <div id="biz-cost-${biz.id}" class="text-sm">$0,00</div>
                                 </button>
                             </div>
                         </div>
@@ -496,48 +580,23 @@
             ui.businessesPanel.innerHTML = html;
         }
 
-        /**
-         * [NEW] Creates the HTML structure for all upgrades and injects it ONCE.
-         */
-        function buildUpgradesUI() {
-            let html = '';
-            for (const upgradeId in game.upgrades) {
-                const upg = game.upgrades[upgradeId];
-                html += `
-                    <button id="upg-btn-${upgradeId}" class="w-full text-left p-3 rounded-lg" onclick="buyUpgrade('${upgradeId}')" style="display: none;">
-                        <div class="font-bold text-white">${upg.name}</div>
-                        <div class="text-sm text-gray-300">${upg.desc} (x${upg.multiplier} profit)</div>
-                        <div class="text-sm font-semibold text-green-400">Cost: $${formatAbbreviatedNumber(upg.cost)}</div>
-                        <div id="upg-status-${upgradeId}" class="text-xs font-medium text-amber-300 mt-1"></div>
-                    </button>
-                `;
-            }
-            ui.upgradesContainer.innerHTML = html;
-        }
-
         function getBizEmoji(id) {
-            const emojis = {
-                lemonade: '🍋', newspaper: '📰', carwash: '🚗', pizza: '🍕', donut: '🍩',
-                shrimp: '🍤', hockey: '🏒', movie: '🎬', bank: '🏦', oil: '🛢️'
-            };
+            const emojis = { lemonade: '🍋', newspaper: '📰', carwash: '🚗', pizza: '🍕', donut: '🍩', shrimp: '🍤', hockey: '🏒', movie: '🎬', bank: '🏦', oil: '🛢️' };
             return emojis[id] || '💰';
         }
 
-        /**
-         * Updates all dynamic UI elements every frame.
-         */
-        function updateUI() {
-            // Header
-            ui.cashDisplay.textContent = `$${formatFullNumber(game.cash)}`;
+        function updateUI(currentTime) {
+            if (currentTime - lastCashUpdateTime > 500) {
+                ui.cashDisplay.textContent = `$${formatFullNumber(game.cash)}`;
+                lastCashUpdateTime = currentTime;
+            }
             ui.angelsDisplay.textContent = formatAbbreviatedNumber(game.angels); 
 
-            // Businesses Panel (Surgical Updates)
             for (const biz of game.businesses) {
                 const el_count = document.getElementById(`biz-count-${biz.id}`);
                 if (!el_count) continue; 
 
                 const revenuePerCycle = getRevenuePerCycle(biz);
-                const clickRevenue = getClickRevenue(biz);
                 const effectiveTime = biz.baseTime / getSpeedBonus(biz);
                 const revenuePerSecond = biz.count > 0 ? (revenuePerCycle / effectiveTime) : 0;
                 
@@ -545,91 +604,105 @@
                 const costToBuy = (amountToBuy > 0) ? getBuyCost(biz, amountToBuy) : getBuyCost(biz, 1);
 
                 el_count.textContent = formatAbbreviatedNumber(biz.count);
+                document.getElementById(`biz-cycle-rev-${biz.id}`).textContent = `$${formatAbbreviatedNumber(revenuePerCycle)}`;
                 document.getElementById(`biz-rev-${biz.id}`).textContent = `$${formatAbbreviatedNumber(revenuePerSecond)}/s`;
-                document.getElementById(`biz-click-rev-${biz.id}`).textContent = `$${formatAbbreviatedNumber(clickRevenue)}`;
                 document.getElementById(`biz-time-${biz.id}`).textContent = `${effectiveTime.toFixed(2).replace('.', ',')}s`;
                 document.getElementById(`biz-buy-amt-${biz.id}`).textContent = (game.buyAmount === 'MAX' && amountToBuy > 0) ? formatAbbreviatedNumber(amountToBuy) : game.buyAmount;
                 document.getElementById(`biz-cost-${biz.id}`).textContent = `$${formatAbbreviatedNumber(costToBuy)}`;
 
-                const progress = (biz.count > 0 && biz.hasManager) ? (biz.automationProgress / effectiveTime) * 100 : 0;
+                const milestoneEl = document.getElementById(`biz-milestone-${biz.id}`);
+                const nextMilestone = getNextMilestone(biz.count);
+                milestoneEl.textContent = nextMilestone ? `(Next x2 at ${nextMilestone})` : '';
+
+                let progress;
+                if (effectiveTime < 1 && biz.count > 0 && biz.hasManager) {
+                    progress = 100;
+                } else {
+                    progress = (biz.count > 0 && biz.hasManager) ? (biz.automationProgress / effectiveTime) * 100 : 0;
+                }
                 document.getElementById(`biz-progress-${biz.id}`).style.width = `${Math.min(100, progress)}%`;
 
                 document.getElementById(`biz-buy-${biz.id}`).disabled = (game.cash < costToBuy) || (amountToBuy === 0);
                 
                 const managerBtn = document.getElementById(`biz-manager-${biz.id}`);
-                if (biz.hasManager) {
-                    managerBtn.style.display = 'none';
-                } else {
-                    managerBtn.style.display = 'block';
-                    managerBtn.disabled = biz.count === 0 || game.cash < biz.managerCost;
-                }
+                managerBtn.style.display = biz.hasManager ? 'none' : 'block';
+                managerBtn.disabled = biz.count === 0 || game.cash < biz.managerCost;
             }
 
-            // Upgrades Panel (Surgical Updates)
             updateUpgradesPanel();
 
-            // Angels Panel
             const angelsToGain = getAngelsToGain();
             ui.angelsToGainDisplay.textContent = formatAbbreviatedNumber(angelsToGain);
             ui.angelBoostDisplay.textContent = `${(getAngelBonus() * 100 - 100).toFixed(0)}%`;
             ui.prestigeButton.disabled = angelsToGain <= 0;
         }
 
-        /**
-         * [REWRITTEN] Surgically updates the state of existing upgrade buttons.
-         */
         function updateUpgradesPanel() {
-            let hasVisibleUpgrades = false;
-
             for (const upgradeId in game.upgrades) {
                 const upg = game.upgrades[upgradeId];
                 const button = document.getElementById(`upg-btn-${upgradeId}`);
-                if (!button) continue; // Skip if the button wasn't created
-
-                // If purchased, ensure it's hidden and skip further processing
-                if (upg.purchased) {
-                    button.style.display = 'none';
-                    continue;
-                }
+                if (!button) continue;
 
                 const targetBiz = game.businesses.find(b => b.id === upg.target);
-                const shouldDisplay = upg.target === 'all' || (targetBiz && targetBiz.count >= 1);
-                
-                button.style.display = shouldDisplay ? 'block' : 'none';
 
-                if (shouldDisplay) {
-                    hasVisibleUpgrades = true;
-                    const isUnlocked = upg.target === 'all' || (targetBiz && targetBiz.count >= upg.unlockCount);
-                    const canAfford = game.cash >= upg.cost;
-                    
-                    button.disabled = !isUnlocked || !canAfford;
+                // 1. Determine what the button's state SHOULD be from the game data.
+                let desiredState;
+                if (upg.purchased) {
+                    desiredState = 'purchased';
+                } else if (targetBiz && targetBiz.count >= upg.unlockCount) {
+                    desiredState = 'unlocked';
+                } else {
+                    desiredState = 'locked';
+                }
 
-                    const statusEl = document.getElementById(`upg-status-${upgradeId}`);
-                    let statusText = '';
-                    let buttonClasses = ['w-full', 'text-left', 'p-3', 'rounded-lg']; // Base classes
+                // 2. Get the button's CURRENT state by checking its classList.
+                let currentState;
+                if (button.classList.contains('purchased')) {
+                    currentState = 'purchased';
+                } else if (button.classList.contains('unlocked')) {
+                    currentState = 'unlocked';
+                } else {
+                    currentState = 'locked';
+                }
 
-                    if (!isUnlocked) {
-                        statusText = `Unlock by owning ${upg.unlockCount} ${targetBiz ? targetBiz.name : 'businesses'}.`;
-                        buttonClasses.push('bg-gray-700', 'opacity-70', 'cursor-default');
-                    } else if (!canAfford) {
-                        statusText = 'Cannot afford.';
-                        buttonClasses.push('bg-gray-700', 'opacity-70');
-                    } else {
-                        statusText = 'READY TO BUY!';
-                        buttonClasses.push('bg-amber-600', 'hover:bg-amber-500');
+                // 3. If the state is already correct, only do a cheap check for affordability.
+                if (currentState === desiredState) {
+                    // This is the only check needed for a button that is already 'unlocked'.
+                    if (desiredState === 'unlocked') {
+                        button.disabled = game.cash < upg.cost;
                     }
-                    
-                    button.className = buttonClasses.join(' ');
-                    statusEl.textContent = statusText;
+                    continue; // The appearance is correct, so skip all expensive DOM changes.
+                }
+
+                // 4. If the state HAS changed, then update the classes.
+                button.classList.remove('locked', 'unlocked', 'purchased');
+                button.classList.add(desiredState);
+
+                // And finally, set the disabled state based on the new state.
+                if (desiredState === 'unlocked') {
+                    button.disabled = game.cash < upg.cost;
+                } else {
+                    button.disabled = true;
                 }
             }
-            
-            ui.noUpgradesMsg.style.display = hasVisibleUpgrades ? 'none' : 'block';
         }
 
+        function updateLongTimers() {
+            for (const biz of game.businesses) {
+                const countdownEl = document.getElementById(`biz-countdown-${biz.id}`);
+                if (!countdownEl) continue;
+
+                const effectiveTime = biz.baseTime / getSpeedBonus(biz);
+                if (biz.hasManager && biz.count > 0 && effectiveTime > 60) {
+                    const timeLeft = effectiveTime - biz.automationProgress;
+                    countdownEl.textContent = `(${formatTime(timeLeft)} left)`;
+                } else {
+                    countdownEl.textContent = '';
+                }
+            }
+        }
 
         // --- EVENT HANDLERS ---
-
         function manualClick(bizId) {
             const biz = game.businesses.find(b => b.id === bizId);
             if (!biz) return;
@@ -637,6 +710,8 @@
             if (revenue > 0) {
                 game.cash += revenue;
                 game.lifetimeCash += revenue;
+                ui.cashDisplay.textContent = `$${formatFullNumber(game.cash)}`;
+                lastCashUpdateTime = new Date().getTime();
             }
         }
 
@@ -648,6 +723,9 @@
             if (game.cash >= cost) {
                 game.cash -= cost;
                 biz.count += amountToBuy;
+                ui.cashDisplay.textContent = `$${formatFullNumber(game.cash)}`;
+                lastCashUpdateTime = new Date().getTime();
+                lastTimerUpdateTime = 0;
             }
         }
 
@@ -656,20 +734,22 @@
             if (!biz.hasManager && game.cash >= biz.managerCost && biz.count > 0) {
                 game.cash -= biz.managerCost;
                 biz.hasManager = true;
+                ui.cashDisplay.textContent = `$${formatFullNumber(game.cash)}`;
+                lastCashUpdateTime = new Date().getTime();
             }
         }
         
         function buyUpgrade(upgradeId) {
             const upg = game.upgrades[upgradeId];
             if (!upg || upg.purchased) return;
-
             const targetBiz = game.businesses.find(b => b.id === upg.target);
-            const isUnlocked = upg.target === 'all' || (targetBiz && targetBiz.count >= upg.unlockCount);
-            
+            const isUnlocked = targetBiz && targetBiz.count >= upg.unlockCount;
             if (isUnlocked && game.cash >= upg.cost) {
                 game.cash -= upg.cost;
                 upg.purchased = true;
-                // The main game loop will handle the UI update automatically
+                ui.cashDisplay.textContent = `$${formatFullNumber(game.cash)}`;
+                lastCashUpdateTime = new Date().getTime();
+                lastTimerUpdateTime = 0; // Force timer update if speed changed
                 saveGame();
             }
         }
@@ -677,7 +757,6 @@
         function prestige() {
             const angelsToGain = getAngelsToGain();
             if (angelsToGain <= 0) return;
-
             showModal("Confirm Reset", 
                 `Are you sure you want to reset? You will gain ${formatAbbreviatedNumber(angelsToGain)} Angel Investors, but all your businesses, cash, and upgrades will be reset.`,
                 () => {
@@ -691,15 +770,12 @@
             );
         }
 
-        function setBuyAmount(amount) {
+        function setBuyAmount(amount, clickedButton) {
             game.buyAmount = amount;
             ui.buyToggleBtns.forEach(btn => {
-                if (btn.textContent.includes(String(amount))) {
-                    btn.classList.add('active', 'bg-amber-500');
-                } else {
-                    btn.classList.remove('active', 'bg-amber-500');
-                }
+                btn.classList.remove('active', 'bg-amber-500');
             });
+            clickedButton.classList.add('active', 'bg-amber-500');
         }
 
         function showTab(tabName) {
@@ -714,7 +790,6 @@
         function showModal(title, message, onConfirm) {
             const existingModal = document.getElementById('custom-modal');
             if (existingModal) existingModal.remove();
-
             const modalHTML = `
                 <div id="custom-modal" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
                     <div class="bg-gray-800 rounded-lg shadow-xl max-w-sm w-full p-6">
@@ -728,10 +803,7 @@
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-            document.getElementById('modal-cancel').onclick = () => {
-                document.getElementById('custom-modal').remove();
-            };
+            document.getElementById('modal-cancel').onclick = () => document.getElementById('custom-modal').remove();
             document.getElementById('modal-confirm').onclick = () => {
                 onConfirm();
                 document.getElementById('custom-modal').remove();
