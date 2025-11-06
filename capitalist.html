@@ -239,6 +239,24 @@
                             <button id="upg-btn-oil-3" class="upgrade-node locked" onclick="buyUpgrade('oil-3')"><span class="effect">Speed x2</span><span class="cost">$45Qa</span><span class="req">Req: 150</span></button>
                         </div>
                     </div>
+
+                    <hr class="border-gray-600">
+                    <!-- Global Upgrades -->
+                    <div class="mt-4">
+                        <h3 class="text-xl font-bold mb-3 text-center">Global Upgrades</h3>
+                        <div class="flex items-center justify-center space-x-4">
+                            <button id="upg-btn-global-1" class="upgrade-node locked" onclick="buyUpgrade('global-1')">
+                                <span class="effect">Profit x2</span>
+                                <span class="cost">$1B</span>
+                                <span class="req">ALL businesses</span>
+                            </button>
+                            <button id="upg-btn-global-2" class="upgrade-node locked" onclick="buyUpgrade('global-2')">
+                                <span class="effect">Profit x2</span>
+                                <span class="cost">$1Qa</span>
+                                <span class="req">ALL businesses</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -348,6 +366,9 @@
                     'oil-1':       { id: 'oil-1',       target: 'oil',       effect: 'profit', multiplier: 3, cost: 31e12,     unlockCount: 25,  purchased: false },
                     'oil-2':       { id: 'oil-2',       target: 'oil',       effect: 'profit', multiplier: 4, cost: 3.8e15,    unlockCount: 75,  purchased: false },
                     'oil-3':       { id: 'oil-3',       target: 'oil',       effect: 'speed',  multiplier: 2, cost: 45e15,     unlockCount: 150, purchased: false },
+                    // Global Upgrades
+                    'global-1':    { id: 'global-1',    target: 'all',       effect: 'profit', multiplier: 2, cost: 1e9,       unlockCount: 1,   purchased: false },
+                    'global-2':    { id: 'global-2',    target: 'all',       effect: 'profit', multiplier: 2, cost: 1e15,      unlockCount: 1,   purchased: false },
                 }
             };
         }
