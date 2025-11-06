@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdVenture Capitalist</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* Base styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none;
+        }
+        /* Progress bar animation */
+        .progress-bar-inner {
+            transition: width 0.1s linear;
+        }
+        /* Cash display uses a mono font for consistent width */
+        .cash-display {
+            font-weight: 900; 
+            font-family: monospace; /* Important for seeing subtle changes in large numbers */
+            min-height: 1.5em; 
+            white-space: nowrap; /* Prevent wrapping */
+        }
+        /* Active tab style */
+        .tab-btn.active {
+            border-bottom-width: 2px;
+            border-color: #f59e0b; /* amber-500 */
+            color: #f59e0b;
+        }
+        /* Disabled button style */
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        /* Pulse animation for startup */
+        @keyframes pulse-startup {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+            50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+        }
+        .pulse-startup {
+            animation: pulse-startup 1.5s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex flex-col items-center justify-center z-50">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-amber-500"></div>
+        <p class="mt-4 text-lg font-semibold">Loading Game Data...</p>
+    </div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-10 bg-gray-800 shadow-md p-3 grid grid-cols-2 gap-4">
+        <div>
+            <span class="text-sm text-green-400">Cash</span>
+            <div id="cash-display" class="cash-display text-xl md:text-3xl text-green-300">$0,00</div>
+        </div>
+        <div class="text-right">
+            <span class="text-sm text-blue-400">Angel Investors</span>
+            <div id="angels-display" class="cash-display text-xl md:text-3xl text-blue-300">0</div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4 max-w-5xl">
+        
+        <!-- Tab Navigation -->
+        <nav class="flex justify-center space-x-4 md:space-x-8 mb-4 border-b border-gray-700">
+            <button id="tab-btn-businesses" class="tab-btn active py-2 px-4 font-semibold text-gray-400" onclick="showTab('businesses')">Businesses</button>
+            <button id="tab-btn-upgrades" class="tab-btn py-2 px-4 font-semibold text-gray-400" onclick="showTab('upgrades')">Upgrades</button>
+            <button id="tab-btn-angels" class="tab-btn py-2 px-4 font-semibold text-gray-400" onclick="showTab('angels')">Angel Investors</button>
+        </nav>
+
+        <!-- Buy Amount Toggle -->
+        <div class="flex justify-center rounded-lg shadow-sm bg-gray-700 w-fit mx-auto mb-4" role="group">
+            <button type="button" class="buy-toggle-btn active bg-amber-500" onclick="setBuyAmount(1)">Buy 1</button>
+            <button type="button" class="buy-toggle-btn" onclick="setBuyAmount(10)">Buy 10</button>
+            <button type="button" class="buy-toggle-btn" onclick="setBuyAmount(100)">Buy 100</button>
+            <button type="button" class="buy-toggle-btn" onclick="setBuyAmount('MAX')">Buy MAX</button>
+        </div>
+        <style>.buy-toggle-btn { padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 500; color: white; background-color: transparent; border: 1px solid transparent; } .buy-toggle-btn:first-child { border-top-left-radius: 0.5rem; border-bottom-left-radius: 0.5rem; } .buy-toggle-btn:last-child { border-top-right-radius: 0.5rem; border-bottom-right-radius: 0.5rem; } .buy-toggle-btn:hover { background-color: #4b5563; } .buy-toggle-btn.active { background-color: #f59e0b; font-weight: 700; }</style>
+
+        <!-- Tab Content Panels -->
+        <div id="tab-content">
+            
+            <!-- Businesses Panel -->
+            <div id="panel-businesses" class="tab-panel space-y-3">
+                <!-- Business items will be injected here by JavaScript -->
+            </div>
+
+            <!-- Upgrades Panel -->
+            <div id="panel-upgrades" class="tab-panel hidden">
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h2 class="text-xl font-bold mb-4">Available Upgrades</h2>
+                    <div id="upgrades-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <!-- Upgrades will be injected here ONCE -->
+                    </div>
+                    <p id="no-upgrades-msg" class="text-gray-400 mt-4">No new upgrades available. Buy your first business (Lemonade Stand) to see early upgrades!</p>
+                </div>
+            </div>
+
+            <!-- Angel Investors Panel -->
+            <div id="panel-angels" class="tab-panel hidden">
+                <div class="bg-gray-800 rounded-lg p-4 text-center">
+                    <h2 class="text-2xl font-bold mb-4">Angel Investors</h2>
+                    <p class="text-lg text-gray-300 mb-2">Each Angel provides a <span class="font-bold text-blue-300">+2% profit boost</span> to all businesses, forever!</p>
+                    <p class="text-lg text-gray-300 mb-4">Your current boost: <span id="angel-boost-display" class="font-bold text-blue-300">0%</span></p>
+                    
+                    <div class="bg-gray-700 rounded-lg p-6 my-6">
+                        <p class="text-xl text-gray-200">Angels to gain on reset:</p>
+                        <p id="angels-to-gain-display" class="text-5xl font-black text-amber-400 my-3">0</p>
+                        <p class="text-gray-400">You need more lifetime earnings to gain angels.</p>
+                    </div>
+
+                    <button id="prestige-button" class="w-full max-w-md bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg" onclick="prestige()">
+                        Reset for Angels
+                    </button>
+                    <p class="text-sm text-gray-500 mt-2">Resetting will set all your businesses, cash, and upgrades to 0, but you will keep your Angel Investors.</p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Game Logic Script -->
+    <script>
+        
+        // --- GLOBAL CONFIG & STATE ---
+        let isGameLoaded = false;
+        let isSaving = false;
+        const SAVE_KEY = 'adventureCapitalistGame'; // Key for localStorage
+
+        // Game state object
+        let game;
+
+        // UI Element cache
+        const ui = {
+            cashDisplay: document.getElementById('cash-display'),
+            angelsDisplay: document.getElementById('angels-display'),
+            businessesPanel: document.getElementById('panel-businesses'),
+            upgradesContainer: document.getElementById('upgrades-container'),
+            noUpgradesMsg: document.getElementById('no-upgrades-msg'),
+            angelsToGainDisplay: document.getElementById('angels-to-gain-display'),
+            angelBoostDisplay: document.getElementById('angel-boost-display'),
+            prestigeButton: document.getElementById('prestige-button'),
+            loadingOverlay: document.getElementById('loading-overlay'),
+            tabBtns: document.querySelectorAll('.tab-btn'),
+            tabPanels: document.querySelectorAll('.tab-panel'),
+            buyToggleBtns: document.querySelectorAll('.buy-toggle-btn')
+        };
+        
+        // --- GAME DATA DEFINITIONS ---
+
+        /**
+         * Defines the initial state for a new game.
+         */
+        function getDefaultGameState() {
+            return {
+                cash: 0,
+                lifetimeCash: 0,
+                angels: 0,
+                lastUpdateTime: new Date().getTime(),
+                buyAmount: 1,
+                // Business data as per the user's requirements
+                businesses: [
+                    { id: 'lemonade', name: 'Lemonade Stand', count: 0, baseCost: 4, costRate: 1.07, baseRevenue: 1, baseTime: 0.6, managerCost: 500, hasManager: false, automationProgress: 0 },
+                    { id: 'newspaper', name: 'Newspaper Delivery', count: 0, baseCost: 60, costRate: 1.15, baseRevenue: 60, baseTime: 3, managerCost: 10000, hasManager: false, automationProgress: 0 },
+                    { id: 'carwash', name: 'Car Wash', count: 0, baseCost: 720, costRate: 1.14, baseRevenue: 720, baseTime: 6, managerCost: 100000, hasManager: false, automationProgress: 0 },
+                    { id: 'pizza', name: 'Pizza Shop', count: 0, baseCost: 8640, costRate: 1.13, baseRevenue: 8640, baseTime: 12, managerCost: 1200000, hasManager: false, automationProgress: 0 },
+                    { id: 'donut', name: 'Donut Shop', count: 0, baseCost: 103680, costRate: 1.12, baseRevenue: 103680, baseTime: 24, managerCost: 14400000, hasManager: false, automationProgress: 0 },
+                    { id: 'shrimp', name: 'Shrimp Boat', count: 0, baseCost: 1244160, costRate: 1.11, baseRevenue: 1244160, baseTime: 96, managerCost: 172800000, hasManager: false, automationProgress: 0 },
+                    { id: 'hockey', name: 'Hockey Team', count: 0, baseCost: 14929920, costRate: 1.10, baseRevenue: 14929920, baseTime: 384, managerCost: 2100000000, hasManager: false, automationProgress: 0 },
+                    { id: 'movie', name: 'Movie Studio', count: 0, baseCost: 179159040, costRate: 1.09, baseRevenue: 179159040, baseTime: 1536, managerCost: 25200000000, hasManager: false, automationProgress: 0 },
+                    { id: 'bank', name: 'Bank', count: 0, baseCost: 2149908480, costRate: 1.08, baseRevenue: 2149908480, baseTime: 6144, managerCost: 300000000000, hasManager: false, automationProgress: 0 },
+                    { id: 'oil', name: 'Oil Rig', count: 0, baseCost: 25798901760, costRate: 1.07, baseRevenue: 25798901760, baseTime: 36864, managerCost: 3600000000000, hasManager: false, automationProgress: 0 }
+                ],
+                // Upgrade data
+                upgrades: {
+                    'lem-upg-1': { id: 'lem-upg-1', name: 'Better Lemons', desc: 'Lemonade profit x3', cost: 1000, target: 'lemonade', multiplier: 3, unlockCount: 10, purchased: false },
+                    'lem-upg-2': { id: 'lem-upg-2', name: 'Sugar Rush', desc: 'Lemonade profit x3', cost: 50000, target: 'lemonade', multiplier: 3, unlockCount: 25, purchased: false },
+                    'news-upg-1': { id: 'news-upg-1', name: 'Extra! Extra!', desc: 'Newspaper profit x3', cost: 60000, target: 'newspaper', multiplier: 3, unlockCount: 10, purchased: false },
+                    'all-upg-1': { id: 'all-upg-1', name: 'Capitalist Coaching', desc: 'ALL profits x2!', cost: 1e9, target: 'all', multiplier: 2, unlockCount: 1, purchased: false }, 
+                    'all-upg-2': { id: 'all-upg-2', name: 'Further Coaching', desc: 'ALL profits x2!', cost: 1e15, target: 'all', multiplier: 2, unlockCount: 1, purchased: false }
+                }
+            };
+        }
+
+        // --- DATA LOADING & SAVING (using localStorage) ---
+
+        /**
+         * Loads game state from localStorage or sets default.
+         */
+        function loadGame() {
+            const defaultState = getDefaultGameState();
+            let data = null;
+            
+            try {
+                const savedData = localStorage.getItem(SAVE_KEY);
+                if (savedData) {
+                    data = JSON.parse(savedData);
+                }
+            } catch (error) {
+                console.error("Error loading from localStorage:", error);
+                data = null; 
+            }
+
+            if (data) {
+                // Merge to ensure new businesses/upgrades from default are included
+                game = { ...defaultState, ...data };
+                game.businesses = defaultState.businesses.map(defaultBiz => {
+                    const savedBiz = data.businesses?.find(b => b.id === defaultBiz.id);
+                    return savedBiz ? { ...defaultBiz, ...savedBiz } : defaultBiz;
+                });
+                // Ensure all default upgrades exist in game.upgrades, potentially overriding saved ones if structure changed
+                game.upgrades = { ...defaultState.upgrades, ...data.upgrades };
+                
+            } else {
+                game = defaultState;
+            }
+            
+            // Re-calculate offline progress
+            calculateOfflineProgress();
+
+            // Set game as loaded and start the loop
+            isGameLoaded = true;
+            ui.loadingOverlay.classList.add('hidden');
+            
+            // Build initial UI structures ONCE
+            buildBusinessesUI();
+            buildUpgradesUI(); // <-- THE NEW FUNCTION CALL
+            
+            // Start game loop
+            requestAnimationFrame(gameLoop);
+            
+            // Start auto-save timer
+            setInterval(saveGame, 5000); // Save every 5 seconds
+        }
+
+        /**
+         * Saves the current game state to localStorage.
+         */
+        function saveGame() {
+            if (isSaving) {
+                return; // Don't save if already saving
+            }
+            
+            isSaving = true;
+            try {
+                game.lastUpdateTime = new Date().getTime();
+                localStorage.setItem(SAVE_KEY, JSON.stringify(game));
+            } catch (error) {
+                console.error("Error saving game to localStorage:", error);
+            }
+            isSaving = false;
+        }
+
+        // --- GAME LOOP & CORE LOGIC ---
+
+        /**
+         * Main game loop, runs every frame.
+         */
+        function gameLoop() {
+            if (!isGameLoaded) {
+                requestAnimationFrame(gameLoop);
+                return;
+            }
+
+            const currentTime = new Date().getTime();
+            const deltaTime = (currentTime - game.lastUpdateTime) / 1000; // Time in seconds
+
+            // Process automation
+            processAutomation(deltaTime);
+            
+            // Update UI
+            updateUI();
+
+            game.lastUpdateTime = currentTime;
+            requestAnimationFrame(gameLoop);
+        }
+
+        /**
+         * Calculates and applies progress made while the game was closed.
+         */
+        function calculateOfflineProgress() {
+            const currentTime = new Date().getTime();
+            const deltaTime = (currentTime - game.lastUpdateTime) / 1000; // Time in seconds
+            
+            if (deltaTime > 0) {
+                processAutomation(deltaTime, true); // Process as offline
+            }
+        }
+
+        /**
+         * Processes all automated business income.
+         */
+        function processAutomation(deltaTime, isOffline = false) {
+            let totalRevenue = 0;
+
+            for (const biz of game.businesses) {
+                if (biz.hasManager && biz.count > 0) {
+                    const effectiveTime = biz.baseTime / getSpeedBonus(biz);
+                    
+                    if (isOffline) {
+                        const cycles = Math.floor(deltaTime / effectiveTime);
+                        if (cycles > 0) {
+                            const revenue = cycles * getRevenuePerCycle(biz);
+                            totalRevenue += revenue;
+                        }
+                    } else {
+                        biz.automationProgress += deltaTime;
+                        if (biz.automationProgress >= effectiveTime) {
+                            const cycles = Math.floor(biz.automationProgress / effectiveTime);
+                            biz.automationProgress %= effectiveTime;
+                            const revenue = cycles * getRevenuePerCycle(biz);
+                            totalRevenue += revenue;
+                        }
+                    }
+                }
+            }
+
+            if (totalRevenue > 0) {
+                game.cash += totalRevenue;
+                game.lifetimeCash += totalRevenue;
+            }
+        }
+
+        // --- CALCULATION FUNCTIONS ---
+
+        /**
+         * Gets the total angel bonus multiplier.
+         */
+        function getAngelBonus() {
+            return 1 + (game.angels * 0.02); // 2% per angel
+        }
+
+        /**
+         * Calculates the revenue for a single cycle of the total business count.
+         */
+        function getRevenuePerCycle(biz) {
+            if (biz.count === 0) return 0;
+            
+            let base = biz.baseRevenue * biz.count;
+            
+            // Apply upgrade multipliers
+            let upgradeMultiplier = 1;
+            for (const upgradeId in game.upgrades) {
+                const upg = game.upgrades[upgradeId];
+                if (upg.purchased && (upg.target === biz.id || upg.target === 'all')) {
+                    upgradeMultiplier *= upg.multiplier;
+                }
+            }
+            
+            // Apply angel bonus
+            return base * upgradeMultiplier * getAngelBonus();
+        }
+
+        /**
+         * Calculates the revenue gained from a single manual click of one unit.
+         */
+        function getClickRevenue(biz) {
+             if (biz.id === 'lemonade' && biz.count === 0) {
+                 return biz.baseRevenue; // $1 for the very first click
+             }
+             if (biz.count === 0) return 0;
+             // Manual click revenue is the revenue of a single unit.
+             return getRevenuePerCycle(biz) / biz.count;
+        }
+
+        /**
+         * Calculates the speed bonus multiplier for a business.
+         */
+        function getSpeedBonus(biz) {
+            const milestones = [25, 50, 100, 200, 300, 400];
+            let multiplier = 1;
+            for (const ms of milestones) {
+                if (biz.count >= ms) {
+                    multiplier *= 2;
+                }
+            }
+            return multiplier;
+        }
+
+        /**
+         * Calculates the cost to buy a specific amount of a business.
+         */
+        function getBuyCost(biz, amount) {
+            const n = biz.count;
+            const r = biz.costRate;
+            const c = biz.baseCost;
+            // Cost = C * (r^n * (r^amount - 1)) / (r - 1)
+            const cost = c * (Math.pow(r, n) * (Math.pow(r, amount) - 1)) / (r - 1);
+            return isFinite(cost) ? cost : Infinity;
+        }
+
+        /**
+         * Calculates the maximum amount of a business the player can buy.
+         */
+        function getMaxBuyAmount(biz) {
+            const n = biz.count;
+            const r = biz.costRate;
+            const c = biz.baseCost;
+            const cash = game.cash;
+            
+            const val = (cash * (r - 1)) / (c * Math.pow(r, n)) + 1;
+            if (val <= 1) return 0;
+            
+            const amount = Math.floor(Math.log(val) / Math.log(r));
+            return Math.max(0, amount);
+        }
+
+        /**
+         * Calculates the number of angels to be gained on reset.
+         */
+        function getAngelsToGain() {
+            // Formula: 150 * sqrt(LifetimeCash / 1e15) - CurrentAngels
+            const angels = Math.floor(150 * Math.sqrt(game.lifetimeCash / 1e15));
+            return Math.max(0, angels - game.angels);
+        }
+
+        /**
+         * Formats large numbers into readable strings (K, M, B, T, etc.)
+         */
+        function formatAbbreviatedNumber(num) {
+            if (Math.abs(num) < 1000) return num.toFixed(2).replace('.', ',');
+            const units = ["K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"];
+            const e = Math.floor(Math.log(Math.abs(num)) / Math.log(1000));
+            if (e >= units.length) {
+                return num.toExponential(2).replace('+', '');
+            }
+            const abbreviated = (num / Math.pow(1000, e)).toFixed(2);
+            return abbreviated.replace('.', ',') + units[e - 1];
+        }
+        
+        /**
+         * Formats cash display as a full number with dot thousands and comma decimal.
+         */
+        function formatFullNumber(num) {
+            const integerPart = Math.floor(num).toLocaleString('de-DE'); 
+            const fractionalPart = (num - Math.floor(num)).toFixed(2).substring(2);
+            return `${integerPart},${fractionalPart}`;
+        }
+
+
+        // --- UI BUILDING & UPDATING ---
+
+        /**
+         * Creates the HTML for all businesses and injects it ONCE.
+         */
+        function buildBusinessesUI() {
+            let html = '';
+            for (const biz of game.businesses) {
+                const isLemonade = biz.id === 'lemonade';
+                const showStartPulse = isLemonade && biz.count === 0 && game.cash < biz.baseCost;
+                const initialClickRev = getClickRevenue(biz);
+                const clickRevText = biz.count > 0 ? `$${formatAbbreviatedNumber(initialClickRev)}` : (isLemonade ? '$1,00' : '$0,00');
+
+                html += `
+                    <div id="biz-${biz.id}" class="bg-gray-800 rounded-lg p-3 shadow-lg">
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <div id="biz-click-${biz.id}" class="relative w-20 h-20 bg-gray-700 rounded-lg flex items-center justify-center text-3xl cursor-pointer ${showStartPulse ? 'pulse-startup' : ''}" onclick="manualClick('${biz.id}')">
+                                ${getBizEmoji(biz.id)}
+                                ${showStartPulse ? '<span class="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold text-amber-400 whitespace-nowrap bg-gray-900 rounded-full px-2 py-0.5 shadow-lg">CLICK TO EARN $1!</span>' : ''}
+                            </div>
+                            <div class="flex-1 min-w-[150px]">
+                                <h3 class="text-lg font-bold text-white">${biz.name}</h3>
+                                <div class="text-sm"><span class="text-gray-400">Owned:</span> <span id="biz-count-${biz.id}" class="font-semibold text-white">0</span></div>
+                                <div class="text-sm"><span class="text-gray-400">Auto Rev/s:</span> <span id="biz-rev-${biz.id}" class="font-semibold text-green-300">$0,00</span></div>
+                                <div class="text-sm"><span class="text-gray-400">Click Rev:</span> <span id="biz-click-rev-${biz.id}" class="font-semibold text-yellow-300">${clickRevText}</span></div>
+                                <div class="text-sm"><span class="text-gray-400">Time:</span> <span id="biz-time-${biz.id}" class="font-semibold text-white">0,60s</span></div>
+                            </div>
+                            <div class="w-full md:w-auto">
+                                <button id="biz-buy-${biz.id}" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg" onclick="buyBusiness('${biz.id}')">
+                                    <div>Buy <span id="biz-buy-amt-${biz.id}">1</span></div>
+                                    <div id="biz-cost-${biz.id}" class="text-sm">$4,00</div>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <div class="w-full bg-gray-700 rounded-full h-2.5">
+                                <div id="biz-progress-${biz.id}" class="progress-bar-inner bg-green-500 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <button id="biz-manager-${biz.id}" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1 px-3 rounded text-sm" onclick="buyManager('${biz.id}')">
+                                Hire Manager ($${formatAbbreviatedNumber(biz.managerCost)})
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            ui.businessesPanel.innerHTML = html;
+        }
+
+        /**
+         * [NEW] Creates the HTML structure for all upgrades and injects it ONCE.
+         */
+        function buildUpgradesUI() {
+            let html = '';
+            for (const upgradeId in game.upgrades) {
+                const upg = game.upgrades[upgradeId];
+                html += `
+                    <button id="upg-btn-${upgradeId}" class="w-full text-left p-3 rounded-lg" onclick="buyUpgrade('${upgradeId}')" style="display: none;">
+                        <div class="font-bold text-white">${upg.name}</div>
+                        <div class="text-sm text-gray-300">${upg.desc} (x${upg.multiplier} profit)</div>
+                        <div class="text-sm font-semibold text-green-400">Cost: $${formatAbbreviatedNumber(upg.cost)}</div>
+                        <div id="upg-status-${upgradeId}" class="text-xs font-medium text-amber-300 mt-1"></div>
+                    </button>
+                `;
+            }
+            ui.upgradesContainer.innerHTML = html;
+        }
+
+        function getBizEmoji(id) {
+            const emojis = {
+                lemonade: '🍋', newspaper: '📰', carwash: '🚗', pizza: '🍕', donut: '🍩',
+                shrimp: '🍤', hockey: '🏒', movie: '🎬', bank: '🏦', oil: '🛢️'
+            };
+            return emojis[id] || '💰';
+        }
+
+        /**
+         * Updates all dynamic UI elements every frame.
+         */
+        function updateUI() {
+            // Header
+            ui.cashDisplay.textContent = `$${formatFullNumber(game.cash)}`;
+            ui.angelsDisplay.textContent = formatAbbreviatedNumber(game.angels); 
+
+            // Businesses Panel (Surgical Updates)
+            for (const biz of game.businesses) {
+                const el_count = document.getElementById(`biz-count-${biz.id}`);
+                if (!el_count) continue; 
+
+                const revenuePerCycle = getRevenuePerCycle(biz);
+                const clickRevenue = getClickRevenue(biz);
+                const effectiveTime = biz.baseTime / getSpeedBonus(biz);
+                const revenuePerSecond = biz.count > 0 ? (revenuePerCycle / effectiveTime) : 0;
+                
+                const amountToBuy = (game.buyAmount === 'MAX') ? getMaxBuyAmount(biz) : game.buyAmount;
+                const costToBuy = (amountToBuy > 0) ? getBuyCost(biz, amountToBuy) : getBuyCost(biz, 1);
+
+                el_count.textContent = formatAbbreviatedNumber(biz.count);
+                document.getElementById(`biz-rev-${biz.id}`).textContent = `$${formatAbbreviatedNumber(revenuePerSecond)}/s`;
+                document.getElementById(`biz-click-rev-${biz.id}`).textContent = `$${formatAbbreviatedNumber(clickRevenue)}`;
+                document.getElementById(`biz-time-${biz.id}`).textContent = `${effectiveTime.toFixed(2).replace('.', ',')}s`;
+                document.getElementById(`biz-buy-amt-${biz.id}`).textContent = (game.buyAmount === 'MAX' && amountToBuy > 0) ? formatAbbreviatedNumber(amountToBuy) : game.buyAmount;
+                document.getElementById(`biz-cost-${biz.id}`).textContent = `$${formatAbbreviatedNumber(costToBuy)}`;
+
+                const progress = (biz.count > 0 && biz.hasManager) ? (biz.automationProgress / effectiveTime) * 100 : 0;
+                document.getElementById(`biz-progress-${biz.id}`).style.width = `${Math.min(100, progress)}%`;
+
+                document.getElementById(`biz-buy-${biz.id}`).disabled = (game.cash < costToBuy) || (amountToBuy === 0);
+                
+                const managerBtn = document.getElementById(`biz-manager-${biz.id}`);
+                if (biz.hasManager) {
+                    managerBtn.style.display = 'none';
+                } else {
+                    managerBtn.style.display = 'block';
+                    managerBtn.disabled = biz.count === 0 || game.cash < biz.managerCost;
+                }
+            }
+
+            // Upgrades Panel (Surgical Updates)
+            updateUpgradesPanel();
+
+            // Angels Panel
+            const angelsToGain = getAngelsToGain();
+            ui.angelsToGainDisplay.textContent = formatAbbreviatedNumber(angelsToGain);
+            ui.angelBoostDisplay.textContent = `${(getAngelBonus() * 100 - 100).toFixed(0)}%`;
+            ui.prestigeButton.disabled = angelsToGain <= 0;
+        }
+
+        /**
+         * [REWRITTEN] Surgically updates the state of existing upgrade buttons.
+         */
+        function updateUpgradesPanel() {
+            let hasVisibleUpgrades = false;
+
+            for (const upgradeId in game.upgrades) {
+                const upg = game.upgrades[upgradeId];
+                const button = document.getElementById(`upg-btn-${upgradeId}`);
+                if (!button) continue; // Skip if the button wasn't created
+
+                // If purchased, ensure it's hidden and skip further processing
+                if (upg.purchased) {
+                    button.style.display = 'none';
+                    continue;
+                }
+
+                const targetBiz = game.businesses.find(b => b.id === upg.target);
+                const shouldDisplay = upg.target === 'all' || (targetBiz && targetBiz.count >= 1);
+                
+                button.style.display = shouldDisplay ? 'block' : 'none';
+
+                if (shouldDisplay) {
+                    hasVisibleUpgrades = true;
+                    const isUnlocked = upg.target === 'all' || (targetBiz && targetBiz.count >= upg.unlockCount);
+                    const canAfford = game.cash >= upg.cost;
+                    
+                    button.disabled = !isUnlocked || !canAfford;
+
+                    const statusEl = document.getElementById(`upg-status-${upgradeId}`);
+                    let statusText = '';
+                    let buttonClasses = ['w-full', 'text-left', 'p-3', 'rounded-lg']; // Base classes
+
+                    if (!isUnlocked) {
+                        statusText = `Unlock by owning ${upg.unlockCount} ${targetBiz ? targetBiz.name : 'businesses'}.`;
+                        buttonClasses.push('bg-gray-700', 'opacity-70', 'cursor-default');
+                    } else if (!canAfford) {
+                        statusText = 'Cannot afford.';
+                        buttonClasses.push('bg-gray-700', 'opacity-70');
+                    } else {
+                        statusText = 'READY TO BUY!';
+                        buttonClasses.push('bg-amber-600', 'hover:bg-amber-500');
+                    }
+                    
+                    button.className = buttonClasses.join(' ');
+                    statusEl.textContent = statusText;
+                }
+            }
+            
+            ui.noUpgradesMsg.style.display = hasVisibleUpgrades ? 'none' : 'block';
+        }
+
+
+        // --- EVENT HANDLERS ---
+
+        function manualClick(bizId) {
+            const biz = game.businesses.find(b => b.id === bizId);
+            if (!biz) return;
+            const revenue = getClickRevenue(biz);
+            if (revenue > 0) {
+                game.cash += revenue;
+                game.lifetimeCash += revenue;
+            }
+        }
+
+        function buyBusiness(bizId) {
+            const biz = game.businesses.find(b => b.id === bizId);
+            const amountToBuy = (game.buyAmount === 'MAX') ? getMaxBuyAmount(biz) : game.buyAmount;
+            if (amountToBuy === 0) return;
+            const cost = getBuyCost(biz, amountToBuy);
+            if (game.cash >= cost) {
+                game.cash -= cost;
+                biz.count += amountToBuy;
+            }
+        }
+
+        function buyManager(bizId) {
+            const biz = game.businesses.find(b => b.id === bizId);
+            if (!biz.hasManager && game.cash >= biz.managerCost && biz.count > 0) {
+                game.cash -= biz.managerCost;
+                biz.hasManager = true;
+            }
+        }
+        
+        function buyUpgrade(upgradeId) {
+            const upg = game.upgrades[upgradeId];
+            if (!upg || upg.purchased) return;
+
+            const targetBiz = game.businesses.find(b => b.id === upg.target);
+            const isUnlocked = upg.target === 'all' || (targetBiz && targetBiz.count >= upg.unlockCount);
+            
+            if (isUnlocked && game.cash >= upg.cost) {
+                game.cash -= upg.cost;
+                upg.purchased = true;
+                // The main game loop will handle the UI update automatically
+                saveGame();
+            }
+        }
+
+        function prestige() {
+            const angelsToGain = getAngelsToGain();
+            if (angelsToGain <= 0) return;
+
+            showModal("Confirm Reset", 
+                `Are you sure you want to reset? You will gain ${formatAbbreviatedNumber(angelsToGain)} Angel Investors, but all your businesses, cash, and upgrades will be reset.`,
+                () => {
+                    game.angels += angelsToGain;
+                    const defaultState = getDefaultGameState();
+                    game.cash = 0;
+                    game.businesses = defaultState.businesses;
+                    game.upgrades = defaultState.upgrades;
+                    saveGame();
+                }
+            );
+        }
+
+        function setBuyAmount(amount) {
+            game.buyAmount = amount;
+            ui.buyToggleBtns.forEach(btn => {
+                if (btn.textContent.includes(String(amount))) {
+                    btn.classList.add('active', 'bg-amber-500');
+                } else {
+                    btn.classList.remove('active', 'bg-amber-500');
+                }
+            });
+        }
+
+        function showTab(tabName) {
+            ui.tabPanels.forEach(panel => {
+                panel.id === `panel-${tabName}` ? panel.classList.remove('hidden') : panel.classList.add('hidden');
+            });
+            ui.tabBtns.forEach(btn => {
+                btn.id === `tab-btn-${tabName}` ? btn.classList.add('active') : btn.classList.remove('active');
+            });
+        }
+        
+        function showModal(title, message, onConfirm) {
+            const existingModal = document.getElementById('custom-modal');
+            if (existingModal) existingModal.remove();
+
+            const modalHTML = `
+                <div id="custom-modal" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+                    <div class="bg-gray-800 rounded-lg shadow-xl max-w-sm w-full p-6">
+                        <h3 class="text-xl font-bold mb-3">${title}</h3>
+                        <p class="text-gray-300 mb-6">${message}</p>
+                        <div class="flex justify-end space-x-3">
+                            <button id="modal-cancel" class="bg-gray-600 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg">Cancel</button>
+                            <button id="modal-confirm" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg">Confirm</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+            document.getElementById('modal-cancel').onclick = () => {
+                document.getElementById('custom-modal').remove();
+            };
+            document.getElementById('modal-confirm').onclick = () => {
+                onConfirm();
+                document.getElementById('custom-modal').remove();
+            };
+        }
+
+        // --- START THE GAME ---
+        window.onload = loadGame;
+
+    </script>
+</body>
+</html>
